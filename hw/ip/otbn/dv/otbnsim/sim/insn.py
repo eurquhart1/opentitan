@@ -551,6 +551,32 @@ class BNADD(OTBNInsn):
         state.wdrs.get_reg(self.wrd).write_unsigned(masked_result)
         state.set_flags(self.flag_group, flags)
 
+class BNCRASH(OTBNInsn):
+    insn = insn_for_mnemonic('bn.crash', 6)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs1 = op_vals['wrs1']
+        self.wrs2 = op_vals['wrs2']
+        self.shift_type = op_vals['shift_type']
+        self.shift_bytes = op_vals['shift_bits'] // 8
+        self.flag_group = op_vals['flag_group']
+
+    def execute(self, state: OTBNState) -> None:
+        a = state.wdrs.get_reg(self.wrs1).read_unsigned()
+        b = state.wdrs.get_reg(self.wrs2).read_unsigned()
+        b_shifted = logical_byte_shift(b, self.shift_type, self.shift_bytes)
+
+        full_result = (a + 5) * (b_shifted - 1)
+        mask256 = (1 << 256) - 1
+        masked_result = full_result & mask256
+        carry_flag = bool((full_result >> 256) & 1)
+        flags = FlagReg.mlz_for_result(carry_flag, masked_result)
+
+        state.wdrs.get_reg(self.wrd).write_unsigned(masked_result)
+        state.set_flags(self.flag_group, flags)
+
 
 class BNADDC(OTBNInsn):
     insn = insn_for_mnemonic('bn.addc', 6)
@@ -1273,7 +1299,7 @@ INSN_CLASSES = [
     ECALL,
     LOOP, LOOPI,
 
-    BNADD, BNADDC, BNADDI, BNADDM,
+    BNCRASH, BNADD, BNADDC, BNADDI, BNADDM,
     BNMULQACC, BNMULQACCWO, BNMULQACCSO,
     BNSUB, BNSUBB, BNSUBI, BNSUBM,
     BNAND, BNOR, BNNOT, BNXOR,

@@ -18,15 +18,19 @@ from typing import Any, List, Tuple
 from testutil import asm_and_link_one_file, SIM_DIR
 from shared.reg_dump import parse_reg_dump
 
+from pathlib import Path
 
-def find_simple_tests() -> List[Tuple[str, str]]:
-    '''Find all tests below ./simple (relative to this file)
+output_dir = Path('/tmp/pytest-of-eu233/pytest-7/test_count_test1_s_0')
+output_dir.mkdir(parents=True, exist_ok=True)
+
+def find_tests(dir) -> List[Tuple[str, str]]:
+    '''Find all tests below ./{dirname} (relative to this file)
 
     Returns (asm, expected) pairs, with the paths to the assembly file and
     expected values.
 
     '''
-    root = os.path.join(os.path.dirname(__file__), 'simple')
+    root = os.path.join(os.path.dirname(__file__), dir)
     ret = []
     for subdir, _, files in os.walk(root):
         # We're interested in pairs foo.s / foo.exp, which contain the assembly
@@ -78,6 +82,12 @@ def find_simple_tests() -> List[Tuple[str, str]]:
 def test_count(tmpdir: py.path.local,
                asm_file: str,
                expected_file: str) -> None:
+        assert helper_test_count(tmpdir=tmpdir, asm_file=asm_file, expected_file=expected_file)
+
+
+def helper_test_count(tmpdir: py.path.local,
+               asm_file: str,
+               expected_file: str) -> None:
     # Start by assembling and linking the input file
     elf_file = asm_and_link_one_file(asm_file, tmpdir)
 
@@ -96,13 +106,14 @@ def test_count(tmpdir: py.path.local,
     # is not constrained; set the expected value to match the actual value.
     for reg in regs_seen:
         if reg not in regs_expected:
+            print("EXPECTED:\t" + str(regs_expected) + "\tACTUAL:\t" + str(regs_seen))
             regs_expected[reg] = regs_seen[reg]
 
-    assert regs_expected == regs_seen
+    return regs_expected == regs_seen
 
 
 def pytest_generate_tests(metafunc: Any) -> None:
     if metafunc.function is test_count:
-        tests = find_simple_tests()
+        tests = find_tests("simple")
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)

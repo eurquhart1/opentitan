@@ -6,7 +6,7 @@ import re
 
 from typing import Dict
 
-_REG_RE = re.compile(r'\s*([a-zA-Z0-9_]+)\s*=\s*((:?0x[0-9a-f]+)|([0-9]+))$')
+_REG_RE = re.compile(r'\s*([a-zA-Z0-9_]+)\s*=\s*((:?0x[0-9a-f]+)|(-?[0-9]+))$')
 
 
 def parse_reg_dump(dump: str) -> Dict[str, int]:
@@ -36,6 +36,14 @@ def parse_reg_dump(dump: str) -> Dict[str, int]:
             raise ValueError(f'Failed to parse reg dump line ({line:!r}).')
         reg = m.group(1)
         value = int(m.group(2), 0)
+
+        # Handle two's complement
+        if reg.startswith('r') and value >= 0x80000000:
+            # 32-bit registers
+            value -= 0x100000000
+        elif reg.startswith('w') and value >= 2**255:
+            # 256-bit registers
+            value -= 2**256
 
         if reg in out:
             raise ValueError(f'Register dump contains multiple values '

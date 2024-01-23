@@ -52,6 +52,28 @@
       funct3: b000
       wrd: wrd
 
+- mnemonic: bn.crash
+  synopsis: crash
+  operands: *bn-add-operands
+  syntax: &bn-crash-syntax |
+    <wrd>, <wrs1>, <wrs2>[ <shift_type> <shift_bits>][, FG<flag_group>]
+  doc: |
+    wrd = (wrs1 + 5) * (wrs2 - 1)
+  errs: []
+  iflow:
+    - to: [wrd, flags-all]
+      from: [wrs1, wrs2]
+  encoding:
+    scheme: bnaf
+    mapping:
+      fg: flag_group
+      shift_type: shift_type
+      shift_bits: shift_bits
+      wrs2: wrs2
+      wrs1: wrs1
+      funct3: b111
+      wrd: wrd
+
 - mnemonic: bn.addc
   synopsis: Add with Carry
   operands: *bn-add-operands

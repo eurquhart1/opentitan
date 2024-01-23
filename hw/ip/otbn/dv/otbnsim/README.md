@@ -1,5 +1,7 @@
 # OTBNSim - OTBN Simulation Software
 
+## Note: This is a fork of the main repository at https://github.com/lowRISC/opentitan, being used for experimental development purposes
+
 `OTBNSim` class represents a simulator that models the whole OTBN block.
 Therefore it includes abstract models for the state of the core, its memory modules, and also the register modules.
 It has methods for starting the execution, cycle-accurate simulation tracing, and for injecting errors and reacting to those errors with a secure wipe.

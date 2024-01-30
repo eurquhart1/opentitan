@@ -93,3 +93,6 @@ book
 
 # Hugo Lock
 .hugo_build.lock
+
+# Utility files
+/hw/ip/otbn/dec_to_hex.py

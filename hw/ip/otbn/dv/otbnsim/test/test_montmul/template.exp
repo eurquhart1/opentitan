@@ -1,0 +1,6 @@
+# The output placeholder will be overwritten in simple_test.py with the actual output value 
+
+w10 = [out1]
+w11 = -3327
+
+INSN_CNT = 2

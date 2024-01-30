@@ -36,27 +36,31 @@ def create_tests(inputs, dirpath):
             tmpcopy = asm_template
             # Write the input value into the template
             for j in range(2):
-                tmpreplace = tmpcopy.replace("[inp" + str(j+1) + "]", str(inputs[i][j]))
+                tmpreplace = tmpcopy.replace("[inp" + str(j+1) + "]", hex(inputs[i]))
                 tmpcopy = tmpreplace
             # Create a new file for this input
             new_asm_filepath = inputoutputpath + "/test" + str(i+1) + ".s"
             with open(new_asm_filepath, 'w') as newfile:
                 newfile.write(tmpreplace)
 
-            #arg1 = inputs[i][0] + 5
-            #arg2 = inputs[i][1] - 1
-            #exp = arg1 * arg2
-            exp = inputs[i][0]
+            QINV = 62209
+
+            a_32bit = inputs[i]
+            out2 = a_32bit & 65535  # Take the lower 16 bits
+            out3 = out2 * QINV
+
 
             tmpcopy = exp_template
             # Write the output value into the template
-            tmpreplace = tmpcopy.replace("[out1]", str(exp))
+            tmpreplace = tmpcopy.replace("[out1]", str(inputs[i]))
+            tmpreplace = tmpreplace.replace("[out2]", str(out2))
+            tmpreplace = tmpreplace.replace("[out3]", str(out3))
             # Create a new file for this input
             new_exp_filepath = inputoutputpath + "/test" + str(i+1) + ".exp"
             with open(new_exp_filepath, 'w') as newfile:
                 newfile.write(tmpreplace)
 
-    return find_tests("test_la/inputoutput")
+    return find_tests("test_montmul/inputoutput")
 
 
 def pytest_generate_tests(metafunc: Any) -> None:
@@ -71,21 +75,14 @@ def pytest_generate_tests(metafunc: Any) -> None:
             pairs = [(x, y) for x in range(5) for y in range(5)]
 
             # Create all of the input/output files in the /testadd directory
-            tests += create_tests(pairs, "test/test_la")
+            tests += create_tests(pairs, "test/testaddbn")
 
         if testmontmul_flag is not None:
             # Define the input list
-            pairs = [(x, y) for x in range(5) for y in range(5)]
+            pairs = [x for x in range(1, 2147483647, 100000000)]
 
             # Create all of the input/output files in the /testadd directory
             tests += create_tests(pairs, "test/test_montmul")
-
-        if test_la_flag is not None:
-            # Define the input list
-            pairs = [(x, y) for x in range(5) for y in range(5)]
-
-            # Create all of the input/output files in the /testadd directory
-            tests += create_tests(pairs, "test/test_la")
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)

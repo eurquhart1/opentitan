@@ -43,13 +43,10 @@ def create_tests(inputs, dirpath):
             with open(new_asm_filepath, 'w') as newfile:
                 newfile.write(tmpreplace)
 
-            #exp = 0
-            #for inp in inputs[i]:
-            #    exp += inp
-
-            arg1 = inputs[i][0] + 5
-            arg2 = inputs[i][1] - 1
-            exp = arg1 * arg2
+            #arg1 = inputs[i][0] + 5
+            #arg2 = inputs[i][1] - 1
+            #exp = arg1 * arg2
+            exp = inputs[i][0]
 
             tmpcopy = exp_template
             # Write the output value into the template
@@ -59,21 +56,36 @@ def create_tests(inputs, dirpath):
             with open(new_exp_filepath, 'w') as newfile:
                 newfile.write(tmpreplace)
 
-    return find_tests("testaddbn/inputoutput")
+    return find_tests("test_la/inputoutput")
 
 
 def pytest_generate_tests(metafunc: Any) -> None:
     if metafunc.function is test_fn:
         tests = list()
-        testadd_flag = None #os.environ.get('TESTADD')
         testaddbn_flag = os.environ.get('BN')
+        testmontmul_flag = os.environ.get('MM')
+        test_la_flag = os.environ.get('LA')
         
         if testaddbn_flag is not None:
             # Define the input list
             pairs = [(x, y) for x in range(5) for y in range(5)]
 
             # Create all of the input/output files in the /testadd directory
-            tests += create_tests(pairs, "test/testaddbn")
+            tests += create_tests(pairs, "test/test_la")
+
+        if testmontmul_flag is not None:
+            # Define the input list
+            pairs = [(x, y) for x in range(5) for y in range(5)]
+
+            # Create all of the input/output files in the /testadd directory
+            tests += create_tests(pairs, "test/test_montmul")
+
+        if test_la_flag is not None:
+            # Define the input list
+            pairs = [(x, y) for x in range(5) for y in range(5)]
+
+            # Create all of the input/output files in the /testadd directory
+            tests += create_tests(pairs, "test/test_la")
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)

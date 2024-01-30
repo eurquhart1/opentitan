@@ -1114,7 +1114,6 @@ class BNLID(OTBNInsn):
         if value is None:
             state.stop_at_end_of_cycle(ErrBits.DMEM_INTG_VIOLATION)
             return
-
         state.wdrs.get_reg(wrd).write_unsigned(value)
 
 

@@ -1,6 +1,8 @@
 # The output placeholder will be overwritten in simple_test.py with the actual output value 
 
-w10 = [out1]
-w11 = -3327
-
-INSN_CNT = 2
+x3 = 5
+w1 = [out1]
+w2 = [out2]  
+w3 = [out3]   
+w4 = 62209
+w5 = 65535

@@ -6,6 +6,11 @@
     addi       x3, x0, 1
     BN.LID     x3, 0(x1)          /*  w1 should now contain input */
 
+    /* Load Q from memory */
+    la         x1, q
+    addi       x3, x0, 6
+    BN.LID     x3, 0(x1)          /*  w6 should now contain Q */
+    
     /* Load QINV from memory */
     la         x1, qinv
     addi       x3, x0, 4
@@ -18,10 +23,22 @@
 
     BN.AND     w2, w5, w1         /*  w2 should contain low 16 bits of input */
 
-    BN.MULQACC.WO  w3, w2.0, w4.0, 0     /* w3 = (16_t)input * QINV */ 
+    BN.MULQACC.WO.Z  w3, w2.0, w4.0, 0     /* w3 = t = (16_t)input * QINV */
+    BN.MULQACC.WO.Z  w3, w3.0, w6.0, 0     /* w7 = t * Q */ 
+    BN.SUB           w3, w1, w3            /* w3 = a - (t*Q) */
+    BN.RSHI          w7, w0, w3 >> 16
+    BN.AND           w7, w7, w5            /* w7 = (int16t)((a - t*Q)>>16) */
     ecall
 
 .data
+    .balign 32
+    q:
+    .word  0xd01  /* Q = 3329 */
+    .word  0x0
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
     .balign 32
     qinv:
     .word  0xf301  /* -3327 in 32-bit two's complement */

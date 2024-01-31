@@ -44,10 +44,11 @@ def create_tests(inputs, dirpath):
                 newfile.write(tmpreplace)
 
             QINV = 62209
+            Q = 3329
 
             a_32bit = inputs[i]
             out2 = a_32bit & 65535  # Take the lower 16 bits
-            out3 = out2 * QINV
+            out3 = (a_32bit - (out2 * QINV * Q)) >> 16
 
 
             tmpcopy = exp_template

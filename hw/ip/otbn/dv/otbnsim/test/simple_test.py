@@ -199,14 +199,35 @@ def otbn_sim_test(args_list):
             actual_value = actual_regs.get(reg, None)
             if actual_value != expected_value:
                 if reg.startswith('w'):
-                    expected_str = f'{expected_value:#066x}'
-                    actual_str = f'{actual_value:#066x}'
+                    # Handle signed expected_value by constructing its 2's complement if it's negative
+                    if expected_value < 0:
+                        # Construct 2's complement for negative numbers
+                        expected_value_unsigned = ((1 << 256) - abs(expected_value)) % (1 << 256)
+                    else:
+                        expected_value_unsigned = expected_value
+
+                    # Ensure actual_value is treated within the same 256-bit space
+                    actual_value_unsigned = actual_value & ((1 << 256) - 1)
+
+                    # Truncate both expected and actual values to the lowest 16 bits
+                    expected_value_truncated = expected_value_unsigned & 0xFFFF
+                    actual_value_truncated = actual_value_unsigned & 0xFFFF
+
+                    # Now compare the truncated values
+                    if actual_value_truncated != expected_value_truncated:
+                        expected_str = f'{expected_value_truncated:#018b}'  # Updated for 16 bits + '0b' prefix
+                        actual_str = f'{actual_value_truncated:#018b}'     # Updated for 16 bits + '0b' prefix
+                        result.err(f'Mismatch for register {reg}:\n'
+                                f'  Expected: {expected_str}\n'
+                                f'  Actual:   {actual_str}')
                 else:
-                    expected_str = f'{expected_value:#010x}'
-                    actual_str = f'{actual_value:#010x}'
-                result.err(f'Mismatch for register {reg}:\n'
-                           f'  Expected: {expected_str}\n'
-                           f'  Actual:   {actual_str}')
+                    # Handle other register types, if any, with their appropriate formatting
+                    expected_str = f'{expected_value:#010b}'
+                    actual_str = f'{actual_value:#010b}'
+                    result.err(f'Mismatch for register {reg}:\n'
+                            f'  Expected: {expected_str}\n'
+                            f'  Actual:   {actual_str}')
+
 
     if result.has_errors() or result.has_warnings() or args.verbose:
         print(result.report())

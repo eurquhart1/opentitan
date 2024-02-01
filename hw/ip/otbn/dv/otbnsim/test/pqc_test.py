@@ -36,7 +36,7 @@ def create_tests(inputs, dirpath):
             tmpcopy = asm_template
             # Write the input value into the template
             for j in range(2):
-                tmpreplace = tmpcopy.replace("[inp" + str(j+1) + "]", hex(inputs[i]))
+                tmpreplace = tmpcopy.replace("[inp" + str(j+1) + "]", hex(inputs[i][j]))
                 tmpcopy = tmpreplace
             # Create a new file for this input
             new_asm_filepath = inputoutputpath + "/test" + str(i+1) + ".s"
@@ -46,14 +46,14 @@ def create_tests(inputs, dirpath):
             QINV = 62209
             Q = 3329
 
-            a_32bit = inputs[i]
+            a_32bit = inputs[i][0] * inputs[i][1]
             out2 = a_32bit & 65535  # Take the lower 16 bits
             out3 = (a_32bit - (out2 * QINV * Q)) >> 16
 
 
             tmpcopy = exp_template
             # Write the output value into the template
-            tmpreplace = tmpcopy.replace("[out1]", str(inputs[i]))
+            tmpreplace = tmpcopy.replace("[out1]", str(a_32bit))
             tmpreplace = tmpreplace.replace("[out2]", str(out2))
             tmpreplace = tmpreplace.replace("[out3]", str(out3))
             # Create a new file for this input
@@ -61,7 +61,7 @@ def create_tests(inputs, dirpath):
             with open(new_exp_filepath, 'w') as newfile:
                 newfile.write(tmpreplace)
 
-    return find_tests("test_montmul/inputoutput")
+    return find_tests("test_fqmul/inputoutput")
 
 
 def pytest_generate_tests(metafunc: Any) -> None:
@@ -69,7 +69,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
         tests = list()
         testaddbn_flag = os.environ.get('BN')
         testmontmul_flag = os.environ.get('MM')
-        test_la_flag = os.environ.get('LA')
+        testfqmul_flag = os.environ.get('FQ')
         
         if testaddbn_flag is not None:
             # Define the input list
@@ -80,10 +80,17 @@ def pytest_generate_tests(metafunc: Any) -> None:
 
         if testmontmul_flag is not None:
             # Define the input list
-            pairs = [x for x in range(1, 2147483647, 100000000)]
+            pairs = [x for x in range(1, 2147483647, 10000000)]
 
             # Create all of the input/output files in the /testadd directory
             tests += create_tests(pairs, "test/test_montmul")
+
+        if testfqmul_flag is not None:
+            # Define the input list
+            pairs = [(x, y) for x in range(1, 2147483647, 100000000) for y in range(1, 2147483647, 100000000)]
+
+            # Create all of the input/output files in the /testadd directory
+            tests += create_tests(pairs, "test/test_fqmul")
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)

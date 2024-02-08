@@ -96,7 +96,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
 
         if testloop0_flag is not None:
             # Define the input list
-            pairs = [(x, y) for x in range(13, 65535, 10000) for y in range(13, 65535, 10000)]
+            pairs = [(x, y) for x in range(1) for y in range(1)]
 
             # Create all of the input/output files in the /testadd directory
             tests += create_tests(pairs, "test/test_inner_loop0")

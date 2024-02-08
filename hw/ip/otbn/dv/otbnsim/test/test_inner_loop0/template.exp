@@ -1,6 +1,4 @@
 # The output placeholder will be overwritten in simple_test.py with the actual output value 
 
-x16 = 1422
-x18 = 16
-x17 = 0
+x16 = [out1]
 

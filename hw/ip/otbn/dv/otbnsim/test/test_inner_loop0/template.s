@@ -22,23 +22,23 @@
 
     /* Set looping variables to constants while iteratively building */
     addi       x7, x0, 1          /* w7 : k */
-    addi       x8, x0, 5          /* w8 : len */
+    addi       x8, x0, [inp1]          /* w8 : len */
     addi       x9, x0, 0          /* w9 : start */
     addi       x11, x0, 0         /* w11 : j */
 
-    /* Load r[j + len] into x13 */
-    add        x12, x11, x8       /* w12 : j + len */
+    /* Load r[j + len] into x16 */
+    add        x12, x11, x8       /* x12 : j + len */
     srai       x13, x12, 1
-    slli       x13, x13, 2        /* w13 : (j + len)*2 ... offset to element in r */
+    slli       x13, x13, 2        /* x13 : (j + len)*2 ... offset to element in r */
     add        x2, x1, x13        /* x1 : base address of r plus offset to element */
     lw         x16, 0(x2)         /* load word 32 bits */
     and        x18, x12, 1        /* (j + len) mod 2 */
     xor        x17, x18, 1        /* inverse */
     slli       x18, x18, 4        /* shift idx left by 5 */
     slli       x17, x17, 4
-    sra        x16, x16, x17
+    srl        x16, x16, x17
     sll        x16, x16, x18
-    sra        x16, x16, x18
+    srl        x16, x16, x18
 
     ecall
 

@@ -35,13 +35,14 @@
     addi       x9, x0, 0          /* w9 : start */
     addi       x11, x0, 0         /* w11 : j */
 
-    /* Load r[j + 1] into w13 */
+    /* Load r[j + len] into w13 */
     add        x12, x11, x8       /* w12 : j + len */
     slli       x12, x12, 4        /* w12 : (j + len)*16 ... offset to element in r */
     add        x1, x1, x12        /* x1 : base address of r plus offset to element */
     addi       x3, x0, 13         /* idx for w15 */
     BN.LID     x3, 0(x1)
     BN.AND     w13, w13, w5
+    
 
     BN.MULQACC.WO.Z  w1, w10.0, w13.0, 0     /* w1 = zeta * r[j + 1] */
 
@@ -95,85 +96,45 @@
 
     .balign 32
     r:
-    .dword [inp2]
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
+    .dword 0xfa13fe99fd0afbec
+    .dword 0x00ca011f058e05d5
+    .dword 0x00b60629026eff55
+    .dword 0x05bcfa3efb4e03c2
 
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
+    .dword 0x017f0108fad3023d
+    .dword 0xff7ef9be05b2fcc3
+    .dword 0x026002dc03f9fd57
+    .dword 0xf9ddff33019bf9fa
 
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
+    .dword 0x03f7fdd8028c04c7
+    .dword 0xf9f8fee605d3faf3
+    .dword 0xfd66fec0fff80204
+    .dword 0x05bd007efb76f9ae
 
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
+    .dword 0x033efef1ffa6fcab
+    .dword 0xfc49ff09fa73006b
+    .dword 0xfd2bfa1c03c1fe72
+    .dword 0xfb0502a5fbd701c0
 
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
+    .dword 0x034b022b01aefbb1
+    .dword 0x0069060e0367fb1d
+    .dword 0xff1500b1024b01a6
+    .dword 0x06750626fe34fedd
 
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
+    .dword 0xff6d0487030aff0a
+    .dword 0x045ffda605cbfcf7
+    .dword 0x015dfc980284f9ca
+    .dword 0xffb5ff64014901a2
 
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
+    .dword 0x0262025b04490331
+    .dword 0x0180fa47fafb052a
+    .dword 0xfac904c2ff78fb41
+    .dword 0xf985fb5d00dcfc96
+    
+    .dword 0x031afb02fa06fb5f
+    .dword 0x01defc9afcaafa1a
+    .dword 0x03df03e4feccff94
+    .dword 0x065c05f2fa4c03be
 
     .dword 0x0
     .dword 0x0

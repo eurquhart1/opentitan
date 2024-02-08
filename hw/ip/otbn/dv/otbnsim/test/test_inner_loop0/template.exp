@@ -1,9 +1,6 @@
 # The output placeholder will be overwritten in simple_test.py with the actual output value 
 
-x12 = 0
-x13 = 0
-w13 =0xfbec
-w14 =0xfbec
-w4 = 62209
-w5 = 65535
-w6 = 3329
+x16 = 1422
+x18 = 16
+x17 = 0
+

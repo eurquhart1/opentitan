@@ -215,8 +215,8 @@ def otbn_sim_test(args_list):
 
                     # Now compare the truncated values
                     if actual_value_truncated != expected_value_truncated:
-                        expected_str = f'{expected_value_truncated:#018b}'  # Updated for 16 bits + '0b' prefix
-                        actual_str = f'{actual_value_truncated:#018b}'     # Updated for 16 bits + '0b' prefix
+                        expected_str = f'{expected_value_truncated:#018x}'  # Updated for 16 bits + '0b' prefix
+                        actual_str = f'{actual_value_truncated:#018x}'     # Updated for 16 bits + '0b' prefix
                         result.err(f'Mismatch for register {reg}:\n'
                                 f'  Expected: {expected_str}\n'
                                 f'  Actual:   {actual_str}')

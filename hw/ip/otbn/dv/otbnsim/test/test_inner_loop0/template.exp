@@ -1,0 +1,10 @@
+# The output placeholder will be overwritten in simple_test.py with the actual output value 
+
+x3 = 13
+w1 = [out1]
+w2 = [out2]  
+w7 = [out3]   
+w13 =[out4]
+w4 = 62209
+w5 = 65535
+w6 = 3329

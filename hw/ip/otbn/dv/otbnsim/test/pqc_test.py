@@ -61,7 +61,7 @@ def create_tests(inputs, dirpath):
             with open(new_exp_filepath, 'w') as newfile:
                 newfile.write(tmpreplace)
 
-    return find_tests("test_inner_loop0/inputoutput")
+    return find_tests("test_fqmul/inputoutput")
 
 
 def pytest_generate_tests(metafunc: Any) -> None:
@@ -70,7 +70,6 @@ def pytest_generate_tests(metafunc: Any) -> None:
         testaddbn_flag = os.environ.get('BN')
         testmontmul_flag = os.environ.get('MM')
         testfqmul_flag = os.environ.get('FQ')
-        testloop0_flag = os.environ.get('L0')
         
         if testaddbn_flag is not None:
             # Define the input list
@@ -92,13 +91,6 @@ def pytest_generate_tests(metafunc: Any) -> None:
 
             # Create all of the input/output files in the /testadd directory
             tests += create_tests(pairs, "test/test_fqmul")
-
-        if testloop0_flag is not None:
-            # Define the input list
-            pairs = [(x, y) for x in range(1, 2147483647, 100000000) for y in range(1, 2147483647, 100000000)]
-
-            # Create all of the input/output files in the /testadd directory
-            tests += create_tests(pairs, "test/test_inner_loop0")
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)

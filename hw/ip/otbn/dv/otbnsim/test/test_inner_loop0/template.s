@@ -1,15 +1,6 @@
 /* The input placeholders will be overwritten by the actual input values */
 
 .text
-    /* Load inputs from memory */
-    la         x1, input_a
-    addi       x3, x0, 10
-    BN.LID     x3, 0(x1)          /*  w1 should now contain input_a */
-
-    /* Load inputs from memory */
-    la         x1, input_b
-    addi       x3, x0, 2
-    BN.LID     x3, 0(x1)          /*  w2 should now contain input_b */
 
     /* Load Q from memory */
     la         x1, q
@@ -37,13 +28,21 @@
 
     /* Load r[j + len] into w13 */
     add        x12, x11, x8       /* w12 : j + len */
-    slli       x12, x12, 4        /* w12 : (j + len)*16 ... offset to element in r */
-    add        x1, x1, x12        /* x1 : base address of r plus offset to element */
+    slli       x12, x12, 1        /* w12 : (j + len)*16 ... offset to element in r */
+    add        x2, x1, x12        /* x1 : base address of r plus offset to element */
     addi       x3, x0, 13         /* idx for w15 */
-    BN.LID     x3, 0(x1)
+    BN.LID     x3, 0(x2)
     BN.AND     w13, w13, w5
-    
 
+    /* Load r[j] into w14 */
+    add        x13, x0, x11       /* w12 : j + len */
+    slli       x13, x13, 1        /* w12 : j*16 ... offset to element in r */
+    la         x1, r
+    add        x3, x1, x13        /* x1 : base address of r plus offset to element */
+    addi       x3, x0, 14         /* idx for w15 */
+    BN.LID     x3, 0(x2)
+    BN.AND     w14, w14, w5
+    
     BN.MULQACC.WO.Z  w1, w10.0, w13.0, 0     /* w1 = zeta * r[j + 1] */
 
     BN.AND     w2, w5, w1         /*  w2 should contain low 16 bits of input to MONTMUL (a*b) */
@@ -76,20 +75,6 @@
     mask_16b:
     .word  0xffff  /* 16 set bits */
     .word  0x0
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-
-    .balign 32
-    input_a:
-    .dword  [inp1]
-    .dword 0x0
-    .dword 0x0
-    .dword 0x0
-
-    .balign 32
-    input_b:
-    .dword  [inp2]
     .dword 0x0
     .dword 0x0
     .dword 0x0

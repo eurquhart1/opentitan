@@ -202,21 +202,28 @@ def otbn_sim_test(args_list):
                     # Handle signed expected_value by constructing its 2's complement if it's negative
                     if expected_value < 0:
                         # Construct 2's complement for negative numbers
-                        expected_value_unsigned = ((1 << 256) - abs(expected_value)) % (1 << 256)
+                        mask = (1 << 256) - 1
+                        # Compute two's complement
+                        expected_value_unsigned = ((abs(expected_value) ^ mask) + 1) & mask
                     else:
                         expected_value_unsigned = expected_value
 
-                    # Ensure actual_value is treated within the same 256-bit space
-                    actual_value_unsigned = actual_value & ((1 << 256) - 1)
+                    if actual_value < 0:
+                        # Construct 2's complement for negative numbers
+                        mask = (1 << 256) - 1
+                        # Compute two's complement
+                        actual_value_unsigned = ((abs(actual_value) ^ mask) + 1) & mask
+                    else:
+                        actual_value_unsigned = actual_value
 
-                    # Truncate both expected and actual values to the lowest 16 bits
-                    expected_value_truncated = expected_value_unsigned & 0xFFFF
-                    actual_value_truncated = actual_value_unsigned & 0xFFFF
+                    # Truncate both expected and actual values to the lowest 32 bits. this is just to eliminate all of the 1s introduced by 2s complement right shift in python
+                    expected_value_truncated = expected_value_unsigned & 0xFFFFFFFF
+                    actual_value_truncated = actual_value_unsigned & 0xFFFFFFFF
 
                     # Now compare the truncated values
                     if actual_value_truncated != expected_value_truncated:
-                        expected_str = f'{expected_value_truncated:#018x}'  # Updated for 16 bits + '0b' prefix
-                        actual_str = f'{actual_value_truncated:#018x}'     # Updated for 16 bits + '0b' prefix
+                        expected_str = f'{expected_value_truncated:#0258b}'  # Updated for 16 bits + '0b' prefix
+                        actual_str = f'{actual_value_truncated:#0258b}'     # Updated for 16 bits + '0b' prefix
                         result.err(f'Mismatch for register {reg}:\n'
                                 f'  Expected: {expected_str}\n'
                                 f'  Actual:   {actual_str}')

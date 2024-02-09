@@ -17,8 +17,10 @@
     addi       x3, x0, 5
     BN.LID     x3, 0(x1)          /*  w5 should now contain 16-bit mask */
 
-    /* Load base address of r from memory */
-    la         x1, r
+    /* Load 16-bit mask from memory */
+    la         x1, mask_32b
+    addi       x3, x0, 21
+    BN.LID     x3, 0(x1)          /*  w21 should now contain 32-bit mask */
 
     /* Set looping variables to constants while iteratively building */
     addi       x7, x0, 1          /* w7 : k */
@@ -26,7 +28,22 @@
     addi       x9, x0, 0          /* w9 : start */
     addi       x11, x0, [inp1]         /* w11 : j */
 
+    /* Load zeta into x20 */
+    la         x1, zetas              /* Load base address of zetas from memory */
+    srai       x13, x7, 1
+    slli       x13, x13, 2        /* x13 : k*2 ... offset to element in zetas */
+    add        x2, x1, x13        /* x1 : base address of zetas plus offset to element */
+    lw         x20, 0(x2)         /* load word 32 bits */
+    and        x18, x7, 1        /* k mod 2 */
+    xor        x17, x18, 1        /* inverse */
+    slli       x18, x18, 4        /* shift idx left by 5 */
+    slli       x17, x17, 4
+    srl        x20, x20, x17
+    sll        x20, x20, x18
+    srl        x20, x20, x18
+
     /* Load r[j + len] into x16 */
+    la         x1, r              /* Load base address of r from memory */
     add        x12, x11, x8       /* x12 : j + len */
     srai       x13, x12, 1
     slli       x13, x13, 2        /* x13 : (j + len)*2 ... offset to element in r */
@@ -41,9 +58,9 @@
     srl        x16, x16, x18
 
     /* Load r[j] into x19 */
+    la         x1, r              /* Load base address of r from memory */
     srai       x13, x11, 1
     slli       x13, x13, 2        /* x13 : j*2 ... offset to element in r */
-    la         x1, r
     add        x2, x1, x13        /* x1 : base address of r plus offset to element */
     lw         x19, 0(x2)         /* load word 32 bits */
     and        x18, x11, 1        /* j mod 2 */
@@ -54,11 +71,47 @@
     sll        x19, x19, x18
     srl        x19, x19, x18
 
+    /* Store zeta and r[j+len] in memory as params */
+    la         x1, zeta
+    sw         x20, 0(x1)
+    la         x1, r_j_len
+    sw         x16, 0(x1)
+
+    /* Read zeta and r[j+len] into WDRs for processing */
+    la         x1, zeta
+    addi       x3, x0, 1
+    BN.LID     x3, 0(x1)          /*  w1 should now contain zeta */
+
+    /* Load inputs from memory */
+    la         x1, r_j_len
+    addi       x3, x0, 2
+    BN.LID     x3, 0(x1)          /*  w2 should now contain r_j_len */
+
+    BN.MULQACC.WO.Z  w1, w1.0, w2.0, 0     /* w1 = a */
+
+    BN.AND     w2, w5, w1         /*  (int16_t)a */
+
+    BN.MULQACC.WO.Z  w3, w2.0, w4.0, 0     /* t = (int16_t)a * QINV */
+    BN.AND           w3, w3, w21           /* (int32_t)t */
+    BN.MULQACC.WO.Z  w4, w3.0, w6.0, 0     /* (int32_t)t * KYBER_Q */ 
+    BN.SUB           w7, w1, w4            /* a - (int32_t)t*KYBER_Q */
+    BN.RSHI          w7, w0, w7 >> 16
+    BN.AND           w7, w7, w21           /* w7 = (int16t)((a - t*Q)>>16) */
+
+    /* Store result t to memory */
+    la         x1, t
+    addi       x3, x0, 7                   /* reference to w7, which holds the result */
+    BN.SID     x3, 0(x1)
+
+    /* Load t into GPR */
+    la         x1, t
+    lw         x19, 0(x1)         /* load word 32 bits */
+
     ecall
 
 .data
 
-    .balign 4
+    .balign 32
     r:
     .word 0x3c11998e
     .word 0xbf893345
@@ -189,7 +242,7 @@
     .word 0xc0307306
     .word 0x2fb63750
 
-    .balign 4
+    .balign 32
     zetas:
     .word 0xfbecfd0a
     .word 0xfe99fa13
@@ -276,6 +329,36 @@
     mask_16b:
     .word  0xffff  /* 16 set bits */
     .word  0x0
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    mask_32b:
+    .dword  0xffffffff  /* 32 set bits */
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    zeta:
+    .word  0x0
+    .word  0x0
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    r_j_len:
+    .word  0x0
+    .word  0x0
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    t:
+    .dword 0x0
     .dword 0x0
     .dword 0x0
     .dword 0x0

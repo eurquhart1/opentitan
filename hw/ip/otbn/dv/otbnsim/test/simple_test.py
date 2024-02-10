@@ -198,42 +198,42 @@ def otbn_sim_test(args_list):
         for reg, expected_value in expected_regs.items():
             actual_value = actual_regs.get(reg, None)
             if actual_value != expected_value:
+                # Handle signed expected_value by constructing its 2's complement if it's negative
+                if expected_value < 0:
+                    # Construct 2's complement for negative numbers
+                    mask = (1 << 256) - 1
+                    # Compute two's complement
+                    expected_value_unsigned = ((abs(expected_value) ^ mask) + 1) & mask
+                else:
+                    expected_value_unsigned = expected_value
+
+                if actual_value < 0:
+                    # Construct 2's complement for negative numbers
+                    mask = (1 << 256) - 1
+                    # Compute two's complement
+                    actual_value_unsigned = ((abs(actual_value) ^ mask) + 1) & mask
+                else:
+                    actual_value_unsigned = actual_value
+
+                # Truncate both expected and actual values to the lowest 32 bits. this is just to eliminate all of the 1s introduced by 2s complement right shift in python
+                expected_value_truncated = expected_value_unsigned & 0xFFFFFFFF
+                actual_value_truncated = actual_value_unsigned & 0xFFFFFFFF
+            
                 if reg.startswith('w'):
-                    # Handle signed expected_value by constructing its 2's complement if it's negative
-                    if expected_value < 0:
-                        # Construct 2's complement for negative numbers
-                        mask = (1 << 256) - 1
-                        # Compute two's complement
-                        expected_value_unsigned = ((abs(expected_value) ^ mask) + 1) & mask
-                    else:
-                        expected_value_unsigned = expected_value
-
-                    if actual_value < 0:
-                        # Construct 2's complement for negative numbers
-                        mask = (1 << 256) - 1
-                        # Compute two's complement
-                        actual_value_unsigned = ((abs(actual_value) ^ mask) + 1) & mask
-                    else:
-                        actual_value_unsigned = actual_value
-
-                    # Truncate both expected and actual values to the lowest 32 bits. this is just to eliminate all of the 1s introduced by 2s complement right shift in python
-                    expected_value_truncated = expected_value_unsigned & 0xFFFFFFFF
-                    actual_value_truncated = actual_value_unsigned & 0xFFFFFFFF
-
                     # Now compare the truncated values
                     if actual_value_truncated != expected_value_truncated:
                         expected_str = f'{expected_value_truncated:#0258b}'  # Updated for 16 bits + '0b' prefix
                         actual_str = f'{actual_value_truncated:#0258b}'     # Updated for 16 bits + '0b' prefix
                         result.err(f'Mismatch for register {reg}:\n'
-                                f'  Expected: {expected_str}\n'
-                                f'  Actual:   {actual_str}')
+                                    f'  Expected: {expected_str}\n'
+                                    f'  Actual:   {actual_str}')
                 else:
-                    # Handle other register types, if any, with their appropriate formatting
-                    expected_str = f'{expected_value:#010b}'
-                    actual_str = f'{actual_value:#010b}'
-                    result.err(f'Mismatch for register {reg}:\n'
-                            f'  Expected: {expected_str}\n'
-                            f'  Actual:   {actual_str}')
+                    if actual_value_truncated != expected_value_truncated:
+                        expected_str = f'{expected_value_truncated:#010b}'  # Updated for 16 bits + '0b' prefix
+                        actual_str = f'{actual_value_truncated:#010b}'     # Updated for 16 bits + '0b' prefix
+                        result.err(f'Mismatch for register {reg}:\n'
+                                    f'  Expected: {expected_str}\n'
+                                    f'  Actual:   {actual_str}')
 
 
     if result.has_errors() or result.has_warnings() or args.verbose:

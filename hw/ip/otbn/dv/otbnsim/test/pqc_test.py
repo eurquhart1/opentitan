@@ -124,7 +124,33 @@ def create_tests(inputs, dirpath):
             out2 = a & 65535
             t = (a - (out2 * QINV * KYBER_Q)) >> 16
 
+            # Adjust for two's complement to interpret as a signed 16-bit integer
+            if t >= 0x8000:  # If the most significant bit is set, indicating a negative number
+                t = t - 0x10000
+
+            t = t & 0xFFFF  # Truncate to 16 bits
+
+            mod = inputs[i] % 2
+            if mod == 0:
+                extra_el = r[inputs[i] + 1]
+                result_hex = (extra_el << 16) ^ (r[inputs[i]] - t)
+            else:
+                print("else")
+                extra_el = r[inputs[i] - 1]
+                result_hex = ((r[inputs[i]] - t) << 16) ^ extra_el
+
+
+            out3 = (r[inputs[i]] - t) << 16
+
+            print(format(r[inputs[i]] - t, '032b'))
+            print(format(extra_el, '032b'))
+            print(format(result_hex, '032b'))
+            #exit(0)
+
             tmpreplace = tmpcopy.replace("[out1]", str(t))
+            tmpreplace = tmpreplace.replace("[out2]", str(result_hex))
+            tmpreplace = tmpreplace.replace("[out3]", str(out3))
+            tmpreplace = tmpreplace.replace("[out4]", str(extra_el))
             # Create a new file for this input
             new_exp_filepath = inputoutputpath + "/test" + str(i+1) + ".exp"
             with open(new_exp_filepath, 'w') as newfile:
@@ -164,7 +190,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
 
         if testloop0_flag is not None:
             # Define the input list
-            pairs = [x for x in range(256)]
+            pairs = [x for x in range(255, 256)]
 
             # Create all of the input/output files in the /testadd directory
             tests += create_tests(pairs, "test/test_inner_loop0")

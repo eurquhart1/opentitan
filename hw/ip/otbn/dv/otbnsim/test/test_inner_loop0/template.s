@@ -16,6 +16,8 @@
     la         x1, mask_16b
     addi       x3, x0, 5
     BN.LID     x3, 0(x1)          /*  w5 should now contain 16-bit mask */
+    la         x1, mask_16b
+    lw         x27, 0(x1)
 
     /* Load 16-bit mask from memory */
     la         x1, mask_32b
@@ -36,26 +38,29 @@
     lw         x20, 0(x2)         /* load word 32 bits */
     and        x18, x7, 1        /* k mod 2 */
     xor        x17, x18, 1        /* inverse */
-    slli       x18, x18, 4        /* shift idx left by 5 */
-    slli       x17, x17, 4
-    srl        x20, x20, x17
-    sll        x20, x20, x18
-    srl        x20, x20, x18
+    slli       x23, x18, 4        /* shift idx left by 4 */
+    slli       x24, x17, 4
+    srl        x20, x20, x24
+    sll        x20, x20, x23
+    srl        x20, x20, x23
 
     /* Load r[j + len] into x16 */
     la         x1, r              /* Load base address of r from memory */
     add        x12, x11, x8       /* x12 : j + len */
-    srai       x13, x12, 1
+    srai       x13, x12, 1        /* floor divide (j + len)//2 */
     slli       x13, x13, 2        /* x13 : (j + len)*2 ... offset to element in r */
     add        x2, x1, x13        /* x1 : base address of r plus offset to element */
-    lw         x16, 0(x2)         /* load word 32 bits */
+    lw         x26, 0(x2)         /* load word 32 bits */
     and        x18, x12, 1        /* (j + len) mod 2 */
     xor        x17, x18, 1        /* inverse */
-    slli       x18, x18, 4        /* shift idx left by 5 */
-    slli       x17, x17, 4
-    srl        x16, x16, x17
-    sll        x16, x16, x18
-    srl        x16, x16, x18
+    slli       x23, x18, 4        /* shift idx left by 4 */
+    slli       x24, x17, 4
+    srl        x16, x26, x24
+    sll        x16, x16, x23
+    srl        x16, x16, x23
+
+    sll        x28, x27, x24
+    and        x26, x26, x28      /* isolate the opposite sub-block in position */
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
@@ -96,16 +101,23 @@
     BN.MULQACC.WO.Z  w4, w3.0, w6.0, 0     /* (int32_t)t * KYBER_Q */ 
     BN.SUB           w7, w1, w4            /* a - (int32_t)t*KYBER_Q */
     BN.RSHI          w7, w0, w7 >> 16
-    BN.AND           w7, w7, w21           /* w7 = (int16t)((a - t*Q)>>16) */
+    BN.AND           w7, w7, w5            /* w7 = (int16t)((a - t*Q)>>16) */
 
     /* Store result t to memory */
     la         x1, t
     addi       x3, x0, 7                   /* reference to w7, which holds the result */
     BN.SID     x3, 0(x1)
 
-    /* Load t into GPR */
+    /* Load t into x21 */
     la         x1, t
-    lw         x19, 0(x1)         /* load word 32 bits */
+    lw         x21, 0(x1)         /* load word 32 bits */
+
+    /* Subtract: r[j] - t into x22 */
+    sub        x22, x19, x21
+
+    sll        x22, x22, x23
+    /*sll        x22, x22, x24*/
+    xor        x18, x22, x26
 
     ecall
 

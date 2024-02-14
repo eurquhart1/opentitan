@@ -1,6 +1,3 @@
 # The output placeholder will be overwritten in simple_test.py with the actual output value 
 
-x21  = [out1]
-x26 = [out4]
 x18 = [out2]
-x22 = [out3]

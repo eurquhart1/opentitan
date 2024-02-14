@@ -50,32 +50,20 @@
     srai       x13, x12, 1        /* floor divide (j + len)//2 */
     slli       x13, x13, 2        /* x13 : (j + len)*2 ... offset to element in r */
     add        x2, x1, x13        /* x1 : base address of r plus offset to element */
-    lw         x26, 0(x2)         /* load word 32 bits */
+    addi       x19, x0, 15         /* load word 32 bits */
     and        x18, x12, 1        /* (j + len) mod 2 */
     xor        x17, x18, 1        /* inverse */
     slli       x23, x18, 4        /* shift idx left by 4 */
     slli       x24, x17, 4
-    srl        x16, x26, x24
+    srl        x16, x19, x24
     sll        x16, x16, x23
     srl        x16, x16, x23
 
-    sll        x28, x27, x24
+    sll        x28, x27, x23
+    add        x29, x0, x26
     and        x26, x26, x28      /* isolate the opposite sub-block in position */
-
-    /* Load r[j] into x19 */
-    la         x1, r              /* Load base address of r from memory */
-    srai       x13, x11, 1
-    slli       x13, x13, 2        /* x13 : j*2 ... offset to element in r */
-    add        x2, x1, x13        /* x1 : base address of r plus offset to element */
-    lw         x19, 0(x2)         /* load word 32 bits */
-    and        x18, x11, 1        /* j mod 2 */
-    xor        x17, x18, 1        /* inverse */
-    slli       x18, x18, 4        /* shift idx left by 5 */
-    slli       x17, x17, 4
-    srl        x19, x19, x17
-    sll        x19, x19, x18
-    srl        x19, x19, x18
-
+/* correct to here */
+    
     /* Store zeta and r[j+len] in memory as params */
     la         x1, zeta
     sw         x20, 0(x1)
@@ -116,7 +104,6 @@
     sub        x22, x19, x21
 
     sll        x22, x22, x23
-    /*sll        x22, x22, x24*/
     xor        x18, x22, x26
 
     ecall
@@ -125,134 +112,134 @@
 
     .balign 32
     r:
-    .word 0x3c11998e
-    .word 0xbf893345
-    .word 0x5d4fe6a6
-    .word 0xb5c90878
-    .word 0x3211a664
-    .word 0x04fc3966
-    .word 0x4ce80fac
-    .word 0x1d6110aa
-    .word 0x77a62b20
-    .word 0x29401e18
-    .word 0xf3560049
-    .word 0xeb47e061
-    .word 0x21b90568
-    .word 0x1024a13e
-    .word 0x84415f9d
-    .word 0xd4c0b313
-    .word 0xdf7c8487
-    .word 0x72be775d
-    .word 0xfa64adb2
-    .word 0x361c98ed
-    .word 0x0aad1c8d
-    .word 0x1249af98
-    .word 0x95a716b3
-    .word 0x42d132e3
-    .word 0xd9387a85
-    .word 0x6048f5c1
-    .word 0x465a2bcd
-    .word 0x7d4cdd17
-    .word 0xe1045190
-    .word 0x987dbcb4
-    .word 0x3d9f35f4
-    .word 0x5b0a5242
-    .word 0xa7727d34
-    .word 0x2a77892a
-    .word 0x988315d3
-    .word 0x2d8e7d68
-    .word 0x07d36220
-    .word 0xcc0833fd
-    .word 0x621ed73b
-    .word 0xf220bbe7
-    .word 0x1ab64a8f
-    .word 0x37d353dd
-    .word 0x81facc03
-    .word 0x2e5e519f
-    .word 0x02d0bc97
-    .word 0xf03559ba
-    .word 0x8cda11ac
-    .word 0x99a4aaff
-    .word 0x0f1149a3
-    .word 0x5ff45bd7
-    .word 0x79b89ae1
-    .word 0x4648ec33
-    .word 0x3304c923
-    .word 0x79b75a7d
-    .word 0xc716eab0
-    .word 0xa9e484ab
-    .word 0xb429a402
-    .word 0xe0affc70
-    .word 0x8a6d9421
-    .word 0xee4bfe51
-    .word 0xd1bc3e8e
-    .word 0xc537faea
-    .word 0xe21b6393
-    .word 0x0cef49cf
-    .word 0x9d835ba0
-    .word 0xe9037c00
-    .word 0xeb8ecbe1
-    .word 0xa4c8a264
-    .word 0x7c5e5b7d
-    .word 0x32d5837b
-    .word 0x17b16c1e
-    .word 0x14ca506c
-    .word 0x3cbf16d2
-    .word 0x2254a06a
-    .word 0x04340c4e
-    .word 0x7371add7
-    .word 0xbab3a16e
-    .word 0x70dbc3d6
-    .word 0x137e5f60
-    .word 0x28c0d3ca
-    .word 0xcbcbea9d
-    .word 0x8afdd010
-    .word 0x1bd75485
-    .word 0x058862e6
-    .word 0xb6969fb7
-    .word 0x99952f17
-    .word 0xc9b1645e
-    .word 0x84df7d96
-    .word 0x0448e7ee
-    .word 0xca3c4c13
-    .word 0x549f54c2
-    .word 0xa07d0eb0
-    .word 0x14f2312f
-    .word 0x667fd333
-    .word 0x3457cc01
-    .word 0xe4db9d2c
-    .word 0x1bec5ccd
-    .word 0x9fe33d73
-    .word 0x84f8980e
-    .word 0x99ca7881
-    .word 0x865110be
-    .word 0xc86b6ff2
-    .word 0x10a5e892
-    .word 0xe7b54703
-    .word 0xbb3cd46e
-    .word 0xbf8eb837
-    .word 0xf300176b
-    .word 0x1aa1b9d2
-    .word 0x33f98472
-    .word 0x00ed40d1
-    .word 0x75f86018
-    .word 0x6d685319
-    .word 0x1fea376b
-    .word 0xa6f5515d
-    .word 0x0bf8e371
-    .word 0x35163ca8
-    .word 0x1d4b3ab8
-    .word 0x20a1f7d1
-    .word 0xeed2b099
-    .word 0x30491ac7
-    .word 0x19ba084e
-    .word 0x500cb566
-    .word 0xa62ad0cc
-    .word 0x676bf864
-    .word 0xea79eda6
-    .word 0x05f3c291
-    .word 0xc0307306
-    .word 0x2fb63750
+    .word 0x998e3c11
+    .word 0x3345bf89
+    .word 0xe6a65d4f
+    .word 0x0878b5c9
+    .word 0xa6643211
+    .word 0x396604fc
+    .word 0x0fac4ce8
+    .word 0x10aa1d61
+    .word 0x2b2077a6
+    .word 0x1e182940
+    .word 0x0049f356
+    .word 0xe061eb47
+    .word 0x056821b9
+    .word 0xa13e1024
+    .word 0x5f9d8441
+    .word 0xb313d4c0
+    .word 0x8487df7c
+    .word 0x775d72be
+    .word 0xadb2fa64
+    .word 0x98ed361c
+    .word 0x1c8d0aad
+    .word 0xaf981249
+    .word 0x16b395a7
+    .word 0x32e342d1
+    .word 0x7a85d938
+    .word 0xf5c16048
+    .word 0x2bcd465a
+    .word 0xdd177d4c
+    .word 0x5190e104
+    .word 0xbcb4987d
+    .word 0x35f43d9f
+    .word 0x52425b0a
+    .word 0x7d34a772
+    .word 0x892a2a77
+    .word 0x15d39883
+    .word 0x7d682d8e
+    .word 0x622007d3
+    .word 0x33fdcc08
+    .word 0xd73b621e
+    .word 0xbbe7f220
+    .word 0x4a8f1ab6
+    .word 0x53dd37d3
+    .word 0xcc0381fa
+    .word 0x519f2e5e
+    .word 0xbc9702d0
+    .word 0x59baf035
+    .word 0x11ac8cda
+    .word 0xaaff99a4
+    .word 0x49a30f11
+    .word 0x5bd75ff4
+    .word 0x9ae179b8
+    .word 0xec334648
+    .word 0xc9233304
+    .word 0x5a7d79b7
+    .word 0xeab0c716
+    .word 0x84aba9e4
+    .word 0xa402b429
+    .word 0xfc70e0af
+    .word 0x94218a6d
+    .word 0xfe51ee4b
+    .word 0x3e8ed1bc
+    .word 0xfaeac537
+    .word 0x6393e21b
+    .word 0x49cf0cef
+    .word 0x5ba09d83
+    .word 0x7c00e903
+    .word 0xcbe1eb8e
+    .word 0xa264a4c8
+    .word 0x5b7d7c5e
+    .word 0x837b32d5
+    .word 0x6c1e17b1
+    .word 0x506c14ca
+    .word 0x16d23cbf
+    .word 0xa06a2254
+    .word 0x0c4e0434
+    .word 0xadd77371
+    .word 0xa16ebab3
+    .word 0xc3d670db
+    .word 0x5f60137e
+    .word 0xd3ca28c0
+    .word 0xea9dcbcb
+    .word 0xd0108afd
+    .word 0x54851bd7
+    .word 0x62e60588
+    .word 0x9fb7b696
+    .word 0x2f179995
+    .word 0x645ec9b1
+    .word 0x7d9684df
+    .word 0xe7ee0448
+    .word 0x4c13ca3c
+    .word 0x54c2549f
+    .word 0x0eb0a07d
+    .word 0x312f14f2
+    .word 0xd333667f
+    .word 0xcc013457
+    .word 0x9d2ce4db
+    .word 0x5ccd1bec
+    .word 0x3d739fe3
+    .word 0x980e84f8
+    .word 0x788199ca
+    .word 0x10be8651
+    .word 0x6ff2c86b
+    .word 0xe89210a5
+    .word 0x4703e7b5
+    .word 0xd46ebb3c
+    .word 0xb837bf8e
+    .word 0x176bf300
+    .word 0xb9d21aa1
+    .word 0x847233f9
+    .word 0x40d100ed
+    .word 0x601875f8
+    .word 0x53196d68
+    .word 0x376b1fea
+    .word 0x515da6f5
+    .word 0xe3710bf8
+    .word 0x3ca83516
+    .word 0x3ab81d4b
+    .word 0xf7d120a1
+    .word 0xb099eed2
+    .word 0x1ac73049
+    .word 0x084e19ba
+    .word 0xb566500c
+    .word 0xd0cca62a
+    .word 0xf864676b
+    .word 0xeda6ea79
+    .word 0xc29105f3
+    .word 0x7306c030
+    .word 0x37502fb6
 
     .balign 32
     zetas:

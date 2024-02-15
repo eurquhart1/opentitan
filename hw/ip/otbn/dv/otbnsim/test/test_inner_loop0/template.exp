@@ -1,9 +1,4 @@
 # The output placeholder will be overwritten in simple_test.py with the actual output value 
 
-x16 = [rjlen]
-x19 = [rjlen]
-x26 = [opp]
-w7 = [out1]
-x21 = [out1]
-x22 = [rjsubt]
 x18 = [out2]
+x4 = [out2]

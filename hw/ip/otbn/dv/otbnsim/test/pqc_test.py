@@ -139,24 +139,10 @@ def create_tests(inputs, dirpath):
                 extra_el = r[inputs[i] - 1]
                 opp = extra_el & 0xFFFF
                 sub = r[inputs[i]] - t
-                #if sub >= 0x8000:  # If the most significant bit is set, indicating a negative number
-                 #   sub = sub - 0x10000
                 sub = sub & 0xFFFF
                 result_hex = (sub << 16) ^ (opp)
-                #exit(0)
-
-            rjlen = r[inputs[i]] & 0xFFFF
-            rjsubt = ((r[inputs[i]] - t) & 0XFFFF) << (inputs[i]%2)*16
-
-            # Adjust for two's complement to interpret as a signed 32-bit integer
-            #if result_hex >= 0x80000000:  # If the most significant bit is set, indicating a negative number
-             #   result_hex = result_hex - 0x100000000
 
             tmpreplace = tmpcopy.replace("[out2]", str(result_hex))
-            tmpreplace = tmpreplace.replace("[out1]", str(t))
-            tmpreplace = tmpreplace.replace("[rjlen]", str(rjlen))
-            tmpreplace = tmpreplace.replace("[opp]", str(opp))
-            tmpreplace = tmpreplace.replace("[rjsubt]", str(rjsubt))
             
             # Create a new file for this input
             new_exp_filepath = inputoutputpath + "/test" + str(i+1) + ".exp"

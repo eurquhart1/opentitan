@@ -25,10 +25,10 @@
     BN.LID     x3, 0(x1)          /*  w21 should now contain 32-bit mask */
 
     /* Set looping variables to constants while iteratively building */
-    addi       x7, x0, 1          /* w7 : k */
-    addi       x8, x0, 0          /* w8 : len */
-    addi       x9, x0, 0          /* w9 : start */
-    addi       x11, x0, [inp1]         /* w11 : j */
+    addi       x7, x0, 1          /* x7 : k */
+    addi       x8, x0, 0          /* x8 : len */
+    addi       x9, x0, 0          /* x9 : start */
+    addi       x11, x0, [inp1]         /* x11 : j */
 
     /* Load zeta into x20 */
     la         x1, zetas              /* Load base address of zetas from memory */
@@ -118,10 +118,20 @@
     /* Subtract: r[j] - t into x22 */
     sub        x22, x19, x21
 
+    /* construct the block for overwriting r[j + len] in memory */
     sll        x28, x27, x23
     sll        x22, x22, x23
     and        x22, x22, x28
     xor        x18, x22, x26
+
+    /* overwrite r[j + len] */
+    la         x1, r
+    add        x3, x1, x8 
+    sw         x18, 0(x3)
+
+    la         x1, r
+    add        x3, x1, x8 
+    lw         x4, 0(x3)
 
     ecall
 

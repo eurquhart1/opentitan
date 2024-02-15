@@ -50,19 +50,20 @@
     srai       x13, x12, 1        /* floor divide (j + len)//2 */
     slli       x13, x13, 2        /* x13 : (j + len)*2 ... offset to element in r */
     add        x2, x1, x13        /* x1 : base address of r plus offset to element */
-    addi       x19, x0, 15         /* load word 32 bits */
+    lw         x26, 0(x2)
     and        x18, x12, 1        /* (j + len) mod 2 */
     xor        x17, x18, 1        /* inverse */
     slli       x23, x18, 4        /* shift idx left by 4 */
-    slli       x24, x17, 4
-    srl        x16, x19, x24
-    sll        x16, x16, x23
-    srl        x16, x16, x23
+    slli       x24, x17, 4        /* shift idx inverse left by 4 */
+    srl        x16, x26, x23
+    sll        x16, x16, x24
+    srl        x16, x16, x24
 
-    sll        x28, x27, x23
+    sll        x28, x27, x24
     add        x29, x0, x26
     and        x26, x26, x28      /* isolate the opposite sub-block in position */
 /* correct to here */
+
     
     /* Store zeta and r[j+len] in memory as params */
     la         x1, zeta

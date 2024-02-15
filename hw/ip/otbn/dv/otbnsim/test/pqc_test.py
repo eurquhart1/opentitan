@@ -53,7 +53,7 @@ r = [15377, -26226, -16503, 13125, 23887, -6490, -18999,
   -31630, 237, 16593, 30200, 24600, 28008, 21273, 8170, 14187, 
   -22795, 20829, 3064, -7311, 13590, 15528, 7499, 15032, 8353, 
   -2095, -4398, -20327, 12361, 6855, 6586, 2126, 20492, -19098, 
-  -22998, -12084, 26475, -1948, -5511, -4698, 1523,   -15727, -16336, 29446, 0, 15]
+  -22998, -12084, 26475, -1948, -5511, -4698, 1523,   -15727, -16336, 29446, 12214, 14160]
 
 def test_fn(tmpdir: py.path.local,
                asm_file: str,
@@ -132,18 +132,20 @@ def create_tests(inputs, dirpath):
             mod = inputs[i] % 2
             if mod == 0:
                 extra_el = r[inputs[i] + 1]
+                opp = extra_el << 16
                 result_hex = ((r[inputs[i]] - t) << 16) ^ extra_el
             else:
                 print("else")
                 extra_el = r[inputs[i] - 1]
-                print(str(extra_el << 16))
+                opp = extra_el & 0xFFFF
                 sub = r[inputs[i]] - t
                 #if sub >= 0x8000:  # If the most significant bit is set, indicating a negative number
                  #   sub = sub - 0x10000
                 sub = sub & 0xFFFF
                 result_hex = (sub << 16) ^ (extra_el)
-                print(bin(result_hex))
                 #exit(0)
+
+            rjlen = r[inputs[i]] & 0xFFFF
 
             # Adjust for two's complement to interpret as a signed 32-bit integer
             #if result_hex >= 0x80000000:  # If the most significant bit is set, indicating a negative number
@@ -151,6 +153,8 @@ def create_tests(inputs, dirpath):
 
             tmpreplace = tmpcopy.replace("[out2]", str(result_hex))
             tmpreplace = tmpreplace.replace("[out1]", str(sub))
+            tmpreplace = tmpreplace.replace("[rjlen]", str(rjlen))
+            tmpreplace = tmpreplace.replace("[opp]", str(opp))
             
             # Create a new file for this input
             new_exp_filepath = inputoutputpath + "/test" + str(i+1) + ".exp"
@@ -191,7 +195,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
 
         if testloop0_flag is not None:
             # Define the input list
-            pairs = [x for x in range(255, 256)]
+            pairs = [x for x in range(256)]
 
             # Create all of the input/output files in the /testadd directory
             tests += create_tests(pairs, "test/test_inner_loop0")

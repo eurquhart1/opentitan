@@ -133,7 +133,7 @@ def create_tests(inputs, dirpath):
             if mod == 0:
                 extra_el = r[inputs[i] + 1]
                 opp = extra_el << 16
-                result_hex = (r[inputs[i]] - t) ^ (extra_el << 16)
+                result_hex = ((extra_el & 0xFFFF) << 16) ^ ((r[inputs[i]] - t) & 0XFFFF)
             else:
                 print("else")
                 extra_el = r[inputs[i] - 1]
@@ -142,7 +142,7 @@ def create_tests(inputs, dirpath):
                 #if sub >= 0x8000:  # If the most significant bit is set, indicating a negative number
                  #   sub = sub - 0x10000
                 sub = sub & 0xFFFF
-                result_hex = (sub << 16) ^ (extra_el)
+                result_hex = (sub << 16) ^ (opp)
                 #exit(0)
 
             rjlen = r[inputs[i]] & 0xFFFF

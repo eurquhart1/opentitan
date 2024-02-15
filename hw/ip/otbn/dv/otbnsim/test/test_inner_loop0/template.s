@@ -62,22 +62,24 @@
     sll        x28, x27, x24
     add        x29, x0, x26
     and        x26, x26, x28      /* isolate the opposite sub-block in position */
-/* correct to here */
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
     srai       x13, x11, 1
     slli       x13, x13, 2        /* x13 : j*2 ... offset to element in r */
     add        x2, x1, x13        /* x1 : base address of r plus offset to element */
-    lw         x19, 0(x2)         /* load word 32 bits */
+    lw         x5, 0(x2)         /* load word 32 bits */
     and        x18, x11, 1        /* j mod 2 */
     xor        x17, x18, 1        /* inverse */
     slli       x18, x18, 4        /* shift idx left by 4 */
     slli       x17, x17, 4        /* shift idx inverse left by 4 */
-    srl        x19, x19, x18
+    srl        x19, x5, x6
     sll        x19, x19, x17
     srl        x19, x19, x17
 
+    sll        x28, x27, x17
+    add        x29, x0, x5
+    and        x5, x5, x28      /* isolate the opposite sub-block in position */
     
     /* Store zeta and r[j+len] in memory as params */
     la         x1, zeta
@@ -116,7 +118,7 @@
     lw         x21, 0(x1)         /* load word 32 bits */
 
     /* Subtract: r[j] - t into x22 */
-    sub        x22, x19, x21
+    add        x22, x19, x21
 
     /* construct the block for overwriting r[j + len] in memory */
     sll        x28, x27, x23
@@ -129,8 +131,17 @@
     add        x3, x1, x8 
     sw         x18, 0(x3)
 
+    /* Add: r[j] + t into x22 */
+    add        x22, x19, x21
+
+    /* construct the block for overwriting r[j] in memory */
+    sll        x28, x27, x6
+    sll        x22, x22, x6
+    and        x22, x22, x28
+    xor        x18, x22, x5
+
     la         x1, r
-    add        x3, x1, x8 
+    add        x3, x1, x8
     lw         x4, 0(x3)
 
     ecall

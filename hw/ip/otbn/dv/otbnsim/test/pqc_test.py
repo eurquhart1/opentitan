@@ -133,16 +133,19 @@ def create_tests(inputs, dirpath):
             if mod == 0:
                 extra_el = r[inputs[i] + 1]
                 opp = extra_el << 16
-                result_hex = ((extra_el & 0xFFFF) << 16) ^ ((r[inputs[i]] - t) & 0XFFFF)
+                result_hex = ((extra_el & 0xFFFF) << 16) ^ ((r[inputs[i]] + t) & 0XFFFF)
             else:
                 print("else")
                 extra_el = r[inputs[i] - 1]
                 opp = extra_el & 0xFFFF
-                sub = r[inputs[i]] - t
+                sub = r[inputs[i]] + t
                 sub = sub & 0xFFFF
                 result_hex = (sub << 16) ^ (opp)
 
+            s = ((r[inputs[i]] + t) & 0XFFFF)<<((inputs[i]%2)*16 )
+
             tmpreplace = tmpcopy.replace("[out2]", str(result_hex))
+            tmpreplace = tmpreplace.replace("[sub]", str(s))
             
             # Create a new file for this input
             new_exp_filepath = inputoutputpath + "/test" + str(i+1) + ".exp"
@@ -183,7 +186,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
 
         if testloop0_flag is not None:
             # Define the input list
-            pairs = [x for x in range(256)]
+            pairs = [x for x in range(0,256, 2)]
 
             # Create all of the input/output files in the /testadd directory
             tests += create_tests(pairs, "test/test_inner_loop0")

@@ -24,19 +24,26 @@ start:
     addi       x3, x0, 21
     BN.LID     x3, 0(x1)          /*  w21 should now contain 32-bit mask */
 
-    /* Set looping variables to constants while iteratively building */
-    addi       x7, x0, 1          /* x7 : k */
-    addi       x8, x0, 0          /* x8 : len */
-    addi       x9, x0, 0          /* x9 : start */
-    addi       x11, x0, [inp1]         /* x11 : j */
+    /* Set constants outside of loops */
+    addi       x30, x0, 2         /* limit for len loop */
+    addi       x31, x0, 255       /* limit for start loop */
+    addi       x7, x0, 1          /* x7 : k = 1 */
+    addi       x8, x0, 128        /* x8 : len = 128 */
+
+loop_len:
+    addi       x9, x0, 0          /* x9 : start = 0 */
+
+loop_start:
+    addi       x7, x7, 1          /* k++ */
+    add        x11, x0, x9
 
     /* Load zeta into x20 */
-    la         x1, zetas              /* Load base address of zetas from memory */
+    la         x1, zetas          /* Load base address of zetas from memory */
     srai       x13, x7, 1
     slli       x13, x13, 2        /* x13 : k*2 ... offset to element in zetas */
     add        x2, x1, x13        /* x1 : base address of zetas plus offset to element */
     lw         x20, 0(x2)         /* load word 32 bits */
-    and        x18, x7, 1        /* k mod 2 */
+    and        x18, x7, 1         /* k mod 2 */
     xor        x17, x18, 1        /* inverse */
     slli       x23, x18, 4        /* shift idx left by 4 */
     slli       x24, x17, 4
@@ -44,6 +51,7 @@ start:
     sll        x20, x20, x23
     srl        x20, x20, x23
 
+loop_j:
     /* Load r[j + len] into x16 */
     la         x1, r              /* Load base address of r from memory */
     add        x12, x11, x8       /* x12 : j + len */
@@ -129,14 +137,24 @@ start:
     and        x22, x22, x28
     xor        x18, x22, x5
 
-    /* read back in r[j + len] (for testing purposes only) */
-    la         x1, r
-    add        x12, x11, x8       /* x12 : j + len */
-    srai       x13, x12, 1        /* floor divide (j + len)//2 */
-    slli       x13, x13, 2        /* x13 : (j + len)*2 ... offset to element in r */
-    add        x2, x1, x13        /* x1 : base address of r plus offset to element */
-    lw         x4, 0(x2)
+    add        x29, x9, x8      /* lim: start + len - 1 */
+    addi       x29, x29, -1    
 
+    beq        x11, x29, loop_start_end
+    addi       x11, x11, 1      /* j++ */
+    jal        x1, loop_j
+
+loop_start_end:
+    beq        x9, x31, loop_len_end
+    add        x9, x11, x8      /* start = j + len */
+    jal        x1, loop_start
+
+loop_len_end:
+    beq        x8, x30, end
+    srli       x8, x8, 1
+    jal        x1, loop_len
+
+end:
     ecall
 
 montmul:

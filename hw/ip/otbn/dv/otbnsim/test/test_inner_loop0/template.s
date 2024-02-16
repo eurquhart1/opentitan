@@ -128,8 +128,11 @@
 
     /* overwrite r[j + len] */
     la         x1, r
-    add        x3, x1, x8 
-    sw         x18, 0(x3)
+    add        x12, x11, x8       /* x12 : j + len */
+    srai       x13, x12, 1        /* floor divide (j + len)//2 */
+    slli       x13, x13, 2        /* x13 : (j + len)*2 ... offset to element in r */
+    add        x2, x1, x13        /* x1 : base address of r plus offset to element */
+    sw         x18, 0(x2)
 
     /* Add: r[j] + t into x22 */
     add        x22, x19, x21
@@ -140,9 +143,13 @@
     and        x22, x22, x28
     xor        x18, x22, x5
 
+    /* read back in r[j + len] (for testing purposes only) */
     la         x1, r
-    add        x3, x1, x8
-    lw         x4, 0(x3)
+    add        x12, x11, x8       /* x12 : j + len */
+    srai       x13, x12, 1        /* floor divide (j + len)//2 */
+    slli       x13, x13, 2        /* x13 : (j + len)*2 ... offset to element in r */
+    add        x2, x1, x13        /* x1 : base address of r plus offset to element */
+    lw         x4, 0(x2)
 
     ecall
 

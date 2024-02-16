@@ -1,7 +1,7 @@
 /* The input placeholders will be overwritten by the actual input values */
 
 .text
-
+start:
     /* Load Q from memory */
     la         x1, q
     addi       x3, x0, 6
@@ -97,21 +97,7 @@
     addi       x3, x0, 2
     BN.LID     x3, 0(x1)          /*  w2 should now contain r_j_len */
 
-    BN.MULQACC.WO.Z  w1, w1.0, w2.0, 0     /* w1 = a */
-
-    BN.AND     w2, w5, w1         /*  (int16_t)a */
-
-    BN.MULQACC.WO.Z  w3, w2.0, w4.0, 0     /* t = (int16_t)a * QINV */
-    BN.AND           w3, w3, w21           /* (int32_t)t */
-    BN.MULQACC.WO.Z  w4, w3.0, w6.0, 0     /* (int32_t)t * KYBER_Q */ 
-    BN.SUB           w7, w1, w4            /* a - (int32_t)t*KYBER_Q */
-    BN.RSHI          w7, w0, w7 >> 16
-    BN.AND           w7, w7, w5            /* w7 = (int16t)((a - t*Q)>>16) */
-
-    /* Store result t to memory */
-    la         x1, t
-    addi       x3, x0, 7                   /* reference to w7, which holds the result */
-    BN.SID     x3, 0(x1)
+    jal        x1, montmul
 
     /* Load t into x21 */
     la         x1, t
@@ -152,6 +138,25 @@
     lw         x4, 0(x2)
 
     ecall
+
+montmul:
+    BN.MULQACC.WO.Z  w1, w1.0, w2.0, 0     /* w1 = a */
+
+    BN.AND     w2, w5, w1         /*  (int16_t)a */
+
+    BN.MULQACC.WO.Z  w3, w2.0, w4.0, 0     /* t = (int16_t)a * QINV */
+    BN.AND           w3, w3, w21           /* (int32_t)t */
+    BN.MULQACC.WO.Z  w4, w3.0, w6.0, 0     /* (int32_t)t * KYBER_Q */ 
+    BN.SUB           w7, w1, w4            /* a - (int32_t)t*KYBER_Q */
+    BN.RSHI          w7, w0, w7 >> 16
+    BN.AND           w7, w7, w5            /* w7 = (int16t)((a - t*Q)>>16) */
+
+    /* Store result t to memory */
+    la         x1, t
+    addi       x3, x0, 7                   /* reference to w7, which holds the result */
+    BN.SID     x3, 0(x1)
+
+    ret
 
 .data
 

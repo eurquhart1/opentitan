@@ -133,16 +133,18 @@ def create_tests(inputs, dirpath):
             if mod == 0:
                 extra_el = r[inputs[i] + 1]
                 opp = extra_el << 16
-                result_hex = ((extra_el & 0xFFFF) << 16) ^ ((r[inputs[i]] - t) & 0XFFFF)
+                result_hex = ((extra_el & 0xFFFF) << 16) ^ ((r[inputs[i]] + t) & 0XFFFF)
             else:
                 print("else")
                 extra_el = r[inputs[i] - 1]
                 opp = extra_el & 0xFFFF
-                sub = r[inputs[i]] - t
+                sub = r[inputs[i]] + t
                 sub = sub & 0xFFFF
                 result_hex = (sub << 16) ^ (opp)
 
+            s = ((r[inputs[i]] + t) & 0XFFFF)<<((inputs[i]%2)*16 )
             tmpreplace = tmpcopy.replace("[out2]", str(result_hex))
+            tmpreplace = tmpreplace.replace("[sub]", str(s))
             
             # Create a new file for this input
             new_exp_filepath = inputoutputpath + "/test" + str(i+1) + ".exp"

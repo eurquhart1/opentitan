@@ -69,15 +69,18 @@
     srai       x13, x11, 1
     slli       x13, x13, 2        /* x13 : j*2 ... offset to element in r */
     add        x2, x1, x13        /* x1 : base address of r plus offset to element */
-    lw         x19, 0(x2)         /* load word 32 bits */
+    lw         x5, 0(x2)         /* load word 32 bits */
     and        x18, x11, 1        /* j mod 2 */
     xor        x17, x18, 1        /* inverse */
     slli       x18, x18, 4        /* shift idx left by 4 */
     slli       x17, x17, 4        /* shift idx inverse left by 4 */
-    srl        x19, x19, x18
+    srl        x19, x5, x18
     sll        x19, x19, x17
     srl        x19, x19, x17
 
+    sll        x28, x27, x17
+    add        x29, x0, x5
+    and        x5, x5, x28
     
     /* Store zeta and r[j+len] in memory as params */
     la         x1, zeta
@@ -116,7 +119,7 @@
     lw         x21, 0(x1)         /* load word 32 bits */
 
     /* Subtract: r[j] - t into x22 */
-    sub        x22, x19, x21
+    add        x22, x19, x21
 
     /* construct the block for overwriting r[j + len] in memory */
     sll        x28, x27, x23

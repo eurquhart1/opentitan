@@ -19,7 +19,7 @@
     la         x1, mask_16b
     lw         x27, 0(x1)
 
-    /* Load 16-bit mask from memory */
+    /* Load 32-bit mask from memory */
     la         x1, mask_32b
     addi       x3, x0, 21
     BN.LID     x3, 0(x1)          /*  w21 should now contain 32-bit mask */
@@ -49,8 +49,8 @@
     add        x12, x11, x8       /* x12 : j + len */
     srai       x13, x12, 1        /* floor divide (j + len)//2 */
     slli       x13, x13, 2        /* x13 : (j + len)*2 ... offset to element in r */
-    add        x2, x1, x13        /* x1 : base address of r plus offset to element */
-    lw         x26, 0(x2)
+    add        x15, x1, x13        /* x1 : base address of r plus offset to element */
+    lw         x26, 0(x15)
     and        x18, x12, 1        /* (j + len) mod 2 */
     xor        x17, x18, 1        /* inverse */
     slli       x23, x18, 4        /* shift idx left by 4 */
@@ -84,8 +84,10 @@
     
     /* Store zeta and r[j+len] in memory as params */
     la         x1, zeta
+    /*and        x20, x20, x27*/
     sw         x20, 0(x1)
     la         x1, r_j_len
+    /*and        x16, x16, x27*/
     sw         x16, 0(x1)
 
     /* Read zeta and r[j+len] into WDRs for processing */

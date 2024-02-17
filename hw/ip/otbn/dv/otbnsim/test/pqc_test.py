@@ -131,7 +131,7 @@ def create_tests(inputs, dirpath):
             t = t & 0xFFFF  # Truncate to 16 bits
             
             mod = idx % 2
-            sub = r[idx] - t
+            sub = r[inputs[i][0]] - t
             if mod == 0:
                 extra_el = r[idx + 1]
                 result_hex_sub = ((extra_el & 0xFFFF) << 16) ^ (sub & 0XFFFF)
@@ -142,6 +142,7 @@ def create_tests(inputs, dirpath):
             s = (sub & 0XFFFF)<<((idx%2)*16 )
             tmpreplace = tmpcopy.replace("[out2]", str(result_hex_sub))
             tmpreplace = tmpreplace.replace("[sub]", str(s))
+            tmpreplace = tmpreplace.replace("[rjlen]", str(r[idx] & 0xFFFF))
             
             # Create a new file for this input
             new_exp_filepath = inputoutputpath + "/test" + str(i+1) + ".exp"
@@ -182,7 +183,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
 
         if testloop0_flag is not None:
             # Define the input list
-            pairs = [(x,y) for x in range(256) for y in range(1)]
+            pairs = [(x,y) for x in range(128) for y in range(128)]
 
             # Create all of the input/output files in the /testadd directory
             tests += create_tests(pairs, "test/test_inner_loop0")

@@ -25,7 +25,7 @@
     BN.LID     x3, 0(x1)          /*  w21 should now contain 32-bit mask */
 
     /* Set looping variables to constants while iteratively building */
-    addi       x7, x0, 1          /* x7 : k */
+    addi       x7, x0, [k]          /* x7 : k */
     addi       x8, x0, [len]          /* x8 : len */
     addi       x9, x0, 0          /* x9 : start */
     addi       x11, x0, [j]         /* x11 : j */

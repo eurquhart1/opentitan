@@ -105,6 +105,7 @@ def create_tests(inputs, dirpath):
             # Write the input value into the template
             tmpreplace = tmpcopy.replace("[j]", hex(inputs[i][0]))
             tmpreplace = tmpreplace.replace("[len]", hex(inputs[i][1]))
+            tmpreplace = tmpreplace.replace("[k]", hex(inputs[i][2]))
             tmpcopy = tmpreplace
             # Create a new file for this input
             new_asm_filepath = inputoutputpath + "/test" + str(i+1) + ".s"
@@ -115,7 +116,7 @@ def create_tests(inputs, dirpath):
 
             idx = inputs[i][0] + inputs[i][1]       # j + len
             inp1 = r[idx]
-            inp2 = zetas[1]     # fixing zeta value for now, only modelling inner loop
+            inp2 = zetas[inputs[i][2]]     # fixing zeta value for now, only modelling inner loop
             if inp1 < 0 :
                 inp1 = to_twos_complement(inp1)
             if inp2 < 0 :
@@ -201,12 +202,12 @@ def pytest_generate_tests(metafunc: Any) -> None:
             while len >= 2:
                 start = 0
                 while start < 256:
-                    k += 1
                     j = start
                     while j < start + len:
-                        inps.append([j, len])
+                        inps.append([j, len, k])
                         j += 1
                     start = j + len
+                    k += 1
                 len >>= 1
 
             # Create all of the input/output files in the /testadd directory

@@ -62,7 +62,6 @@
     sll        x28, x27, x24
     add        x29, x0, x26
     and        x26, x26, x28      /* isolate the opposite sub-block in position */
-/* correct to here */
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
@@ -127,12 +126,28 @@
     sll        x28, x27, x23
     sll        x22, x22, x23
     and        x22, x22, x28
-    xor        x18, x22, x26
+    xor        x30, x22, x26
 
     /* overwrite r[j + len] */
-    sw         x18, 0(x13)
+    sw         x30, 0(x15)
 
-    lw         x4, 0(x13)
+    /* load r[j + len] into r4 for testing purposes */
+    lw         x4, 0(x15)
+
+    /* Add: r[j] + t into x22 */
+    add        x22, x19, x21
+
+    /* construct the block for overwriting r[j] in memory */
+    sll        x28, x27, x18
+    sll        x22, x22, x18
+    and        x22, x22, x28
+    xor        x18, x22, x5
+
+    /* overwrite r[j] */
+    sw         x18, 0(x2)
+
+    /* load r[j] into r2 for testing purposes */
+    lw         x5, 0(x2)
 
     ecall
 

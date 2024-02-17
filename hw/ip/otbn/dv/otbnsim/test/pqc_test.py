@@ -139,8 +139,18 @@ def create_tests(inputs, dirpath):
                 extra_el = r[idx - 1]
                 result_hex_sub = ((sub & 0xFFFF) << 16) ^ (extra_el & 0xFFFF)
 
+            mod = inputs[i][0] % 2
+            add = r[inputs[i][0]] + t
+            if mod == 0:
+                extra_el = r[inputs[i][0] + 1]
+                result_hex_add = ((extra_el & 0xFFFF) << 16) ^ (add & 0XFFFF)
+            else:
+                extra_el = r[inputs[i][0] - 1]
+                result_hex_add = ((add & 0xFFFF) << 16) ^ (extra_el & 0xFFFF)
+
             s = (sub & 0XFFFF)<<((idx%2)*16 )
             tmpreplace = tmpcopy.replace("[out2]", str(result_hex_sub))
+            tmpreplace = tmpreplace.replace("[out3]", str(result_hex_add))
             tmpreplace = tmpreplace.replace("[sub]", str(s))
             tmpreplace = tmpreplace.replace("[rjlen]", str(r[idx] & 0xFFFF))
             

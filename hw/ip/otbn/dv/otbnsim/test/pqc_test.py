@@ -193,10 +193,24 @@ def pytest_generate_tests(metafunc: Any) -> None:
 
         if testloop0_flag is not None:
             # Define the input list
-            pairs = [(x,y) for x in range(128) for y in range(128)]
+            #pairs = [(x,y) for x in range(128) for y in range(128)]
+            inps = []
+
+            k = 1
+            len = 128
+            while len >= 2:
+                start = 0
+                while start < 256:
+                    k += 1
+                    j = start
+                    while j < start + len:
+                        inps.append([j, len])
+                        j += 1
+                    start = j + len
+                len >>= 1
 
             # Create all of the input/output files in the /testadd directory
-            tests += create_tests(pairs, "test/test_inner_loop0")
+            tests += create_tests(inps, "test/test_inner_loop0")
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)

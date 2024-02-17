@@ -26,9 +26,9 @@
 
     /* Set looping variables to constants while iteratively building */
     addi       x7, x0, 1          /* x7 : k */
-    addi       x8, x0, 0          /* x8 : len */
+    addi       x8, x0, [len]          /* x8 : len */
     addi       x9, x0, 0          /* x9 : start */
-    addi       x11, x0, [inp1]         /* x11 : j */
+    addi       x11, x0, [j]         /* x11 : j */
 
     /* Load zeta into x20 */
     la         x1, zetas              /* Load base address of zetas from memory */
@@ -128,13 +128,9 @@
     xor        x18, x22, x26
 
     /* overwrite r[j + len] */
-    la         x1, r
-    add        x3, x1, x8 
-    sw         x18, 0(x3)
+    sw         x18, 0(x13)
 
-    la         x1, r
-    add        x3, x1, x8 
-    lw         x4, 0(x3)
+    lw         x4, 0(x13)
 
     ecall
 

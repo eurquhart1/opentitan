@@ -103,9 +103,9 @@ def create_tests(inputs, dirpath):
         for i in range(len(inputs)):
             tmpcopy = asm_template
             # Write the input value into the template
-            for j in range(2):
-                tmpreplace = tmpcopy.replace("[inp" + str(j+1) + "]", hex(inputs[i]))
-                tmpcopy = tmpreplace
+            tmpreplace = tmpcopy.replace("[j]", hex(inputs[i][0]))
+            tmpreplace = tmpreplace.replace("[len]", hex(inputs[i][1]))
+            tmpcopy = tmpreplace
             # Create a new file for this input
             new_asm_filepath = inputoutputpath + "/test" + str(i+1) + ".s"
             with open(new_asm_filepath, 'w') as newfile:
@@ -113,7 +113,8 @@ def create_tests(inputs, dirpath):
 
             tmpcopy = exp_template
 
-            inp1 = r[inputs[i]]
+            idx = inputs[i][0] + inputs[i][1]       # j + len
+            inp1 = r[idx]
             inp2 = zetas[1]     # fixing zeta value for now, only modelling inner loop
             if inp1 < 0 :
                 inp1 = to_twos_complement(inp1)
@@ -129,16 +130,16 @@ def create_tests(inputs, dirpath):
 
             t = t & 0xFFFF  # Truncate to 16 bits
             
-            mod = inputs[i] % 2
-            sub = r[inputs[i]] - t
+            mod = idx % 2
+            sub = r[idx] - t
             if mod == 0:
-                extra_el = r[inputs[i] + 1]
+                extra_el = r[idx + 1]
                 result_hex_sub = ((extra_el & 0xFFFF) << 16) ^ (sub & 0XFFFF)
             else:
-                extra_el = r[inputs[i] - 1]
+                extra_el = r[idx - 1]
                 result_hex_sub = ((sub & 0xFFFF) << 16) ^ (extra_el & 0xFFFF)
 
-            s = (sub & 0XFFFF)<<((inputs[i]%2)*16 )
+            s = (sub & 0XFFFF)<<((idx%2)*16 )
             tmpreplace = tmpcopy.replace("[out2]", str(result_hex_sub))
             tmpreplace = tmpreplace.replace("[sub]", str(s))
             
@@ -181,7 +182,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
 
         if testloop0_flag is not None:
             # Define the input list
-            pairs = [x for x in range(256)]
+            pairs = [(x,y) for x in range(256) for y in range(1)]
 
             # Create all of the input/output files in the /testadd directory
             tests += create_tests(pairs, "test/test_inner_loop0")

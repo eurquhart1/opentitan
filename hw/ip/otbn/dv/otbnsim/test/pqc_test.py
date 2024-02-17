@@ -128,22 +128,18 @@ def create_tests(inputs, dirpath):
                 t = t - 0x10000
 
             t = t & 0xFFFF  # Truncate to 16 bits
-            sub = 0
+            
             mod = inputs[i] % 2
+            sub = r[inputs[i]] - t
             if mod == 0:
                 extra_el = r[inputs[i] + 1]
-                opp = extra_el << 16
-                result_hex = ((extra_el & 0xFFFF) << 16) ^ ((r[inputs[i]] + t) & 0XFFFF)
+                result_hex_sub = ((extra_el & 0xFFFF) << 16) ^ (sub & 0XFFFF)
             else:
-                print("else")
                 extra_el = r[inputs[i] - 1]
-                opp = extra_el & 0xFFFF
-                sub = r[inputs[i]] + t
-                sub = sub & 0xFFFF
-                result_hex = (sub << 16) ^ (opp)
+                result_hex_sub = ((sub & 0xFFFF) << 16) ^ (extra_el & 0xFFFF)
 
-            s = ((r[inputs[i]] + t) & 0XFFFF)<<((inputs[i]%2)*16 )
-            tmpreplace = tmpcopy.replace("[out2]", str(result_hex))
+            s = (sub & 0XFFFF)<<((inputs[i]%2)*16 )
+            tmpreplace = tmpcopy.replace("[out2]", str(result_hex_sub))
             tmpreplace = tmpreplace.replace("[sub]", str(s))
             
             # Create a new file for this input

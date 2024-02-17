@@ -119,7 +119,7 @@
     lw         x21, 0(x1)         /* load word 32 bits */
 
     /* Subtract: r[j] - t into x22 */
-    add        x22, x19, x21
+    sub        x22, x19, x21
 
     /* construct the block for overwriting r[j + len] in memory */
     sll        x28, x27, x23

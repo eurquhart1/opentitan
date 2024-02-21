@@ -1,4 +1,3 @@
 # The output placeholder will be overwritten in simple_test.py with the actual output value 
 
-x4 = [out2]
-x5 = [out3]
+x3 = [val]

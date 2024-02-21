@@ -100,12 +100,12 @@ def create_tests(inputs, dirpath):
     with open(asm_template_path, 'r') as asm_template, open(exp_template_path, 'r') as exp_template:
         asm_template = asm_template.read()
         exp_template = exp_template.read()
-        for i in range(len(inputs)):
+        vals, asm_data = generate_otbn_data_section_16bit(r)
+        for i in range(len(r)//2):
             tmpcopy = asm_template
             # Write the input value into the template
-            tmpreplace = tmpcopy.replace("[j]", hex(inputs[i][0]))
-            tmpreplace = tmpreplace.replace("[len]", hex(inputs[i][1]))
-            tmpreplace = tmpreplace.replace("[k]", hex(inputs[i][2]))
+            tmpreplace = tmpcopy.replace("[r]", asm_data)
+            tmpreplace = tmpreplace.replace("[idx]", str(i*2))
             tmpcopy = tmpreplace
             # Create a new file for this input
             new_asm_filepath = inputoutputpath + "/test" + str(i+1) + ".s"
@@ -148,12 +148,8 @@ def create_tests(inputs, dirpath):
             else:
                 extra_el = r[inputs[i][0] - 1]
                 result_hex_add = ((add & 0xFFFF) << 16) ^ (extra_el & 0xFFFF)
-
-            s = (sub & 0XFFFF)<<((idx%2)*16 )
-            tmpreplace = tmpcopy.replace("[out2]", str(result_hex_sub))
-            tmpreplace = tmpreplace.replace("[out3]", str(result_hex_add))
-            tmpreplace = tmpreplace.replace("[sub]", str(s))
-            tmpreplace = tmpreplace.replace("[rjlen]", str(r[idx] & 0xFFFF))
+            
+            tmpreplace = tmpcopy.replace("[val]", str(vals[i]))
             
             # Create a new file for this input
             new_exp_filepath = inputoutputpath + "/test" + str(i+1) + ".exp"
@@ -215,3 +211,39 @@ def pytest_generate_tests(metafunc: Any) -> None:
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)
+
+def generate_otbn_data_section_16bit(values):
+    """
+    Generates the .data section for OTBN assembly where each 16-bit value
+    is stored contiguously in memory, ensuring that the array's elements
+    are in order of increasing significance in memory locations. Each pair
+    of 16-bit values is combined into a 32-bit word, with padding added if necessary
+    to accommodate an odd number of 16-bit values.
+    """
+    # Initialize the assembly code string
+    assembly_code = ".data\n"
+    vals = []
+
+    # Ensure the number of values is even by padding with a zero if necessary
+    if len(values) % 2 != 0:
+        values.append(0)
+
+    # Process each pair of 16-bit values
+    for i in range(0, len(values), 2):
+        # Convert to two's complement if negative, then ensure it's confined to 16 bits
+        val1 = values[i] & 0xFFFF
+        val2 = values[i+1] & 0xFFFF
+
+        if values[i] < 0:
+            val1 = ((~(-values[i]) + 1) & 0xFFFF)
+        if values[i+1] < 0:
+            val2 = ((~(-values[i+1]) + 1) & 0xFFFF)
+
+        # Combine the two 16-bit values into a single 32-bit value
+        combined_val = val1 | (val2 << 16)
+        vals.append(hex(combined_val))
+        
+        # Append the assembly directive with the combined value
+        assembly_code += f"    .word 0x{combined_val:08x}\n"
+        
+    return vals, assembly_code

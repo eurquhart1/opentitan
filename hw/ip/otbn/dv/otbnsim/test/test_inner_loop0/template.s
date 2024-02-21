@@ -25,10 +25,10 @@
     BN.LID     x3, 0(x1)          /*  w21 should now contain 32-bit mask */
 
     /* Set looping variables to constants while iteratively building */
-    addi       x7, x0, [k]          /* x7 : k */
-    addi       x8, x0, [len]          /* x8 : len */
+    addi       x7, x0, 1          /* x7 : k */
+    addi       x8, x0, 128          /* x8 : len */
     addi       x9, x0, 0          /* x9 : start */
-    addi       x11, x0, [j]         /* x11 : j */
+    addi       x11, x0, 0         /* x11 : j */
 
     /* Load zeta into x20 */
     la         x1, zetas              /* Load base address of zetas from memory */
@@ -129,7 +129,7 @@
     xor        x30, x22, x26
 
     /* overwrite r[j + len] */
-    sw         x30, 0(x15)
+    /*sw         x30, 0(x15)*/
 
     /* load r[j + len] into r4 for testing purposes */
     lw         x4, 0(x15)
@@ -144,10 +144,18 @@
     xor        x18, x22, x5
 
     /* overwrite r[j] */
-    sw         x18, 0(x2)
+    /*sw         x18, 0(x2)*/
 
     /* load r[j] into r2 for testing purposes */
     lw         x5, 0(x2)
+
+    la         x1, r
+    addi       x3, x3, 21
+    addi       x11, x0, [idx]
+    srai       x13, x11, 1
+    slli       x13, x13, 2        /* x13 : j*2 ... offset to element in r */
+    add        x2, x1, x13        /* x1 : base address of r plus offset to element */
+    lw         x3, 0(x2)          /*  w21 should now contain 32-bit mask */
 
     ecall
 
@@ -155,134 +163,7 @@
 
     .balign 32
     r:
-    .word 0x998e3c11
-    .word 0x3345bf89
-    .word 0xe6a65d4f
-    .word 0x0878b5c9
-    .word 0xa6643211
-    .word 0x396604fc
-    .word 0x0fac4ce8
-    .word 0x10aa1d61
-    .word 0x2b2077a6
-    .word 0x1e182940
-    .word 0x0049f356
-    .word 0xe061eb47
-    .word 0x056821b9
-    .word 0xa13e1024
-    .word 0x5f9d8441
-    .word 0xb313d4c0
-    .word 0x8487df7c
-    .word 0x775d72be
-    .word 0xadb2fa64
-    .word 0x98ed361c
-    .word 0x1c8d0aad
-    .word 0xaf981249
-    .word 0x16b395a7
-    .word 0x32e342d1
-    .word 0x7a85d938
-    .word 0xf5c16048
-    .word 0x2bcd465a
-    .word 0xdd177d4c
-    .word 0x5190e104
-    .word 0xbcb4987d
-    .word 0x35f43d9f
-    .word 0x52425b0a
-    .word 0x7d34a772
-    .word 0x892a2a77
-    .word 0x15d39883
-    .word 0x7d682d8e
-    .word 0x622007d3
-    .word 0x33fdcc08
-    .word 0xd73b621e
-    .word 0xbbe7f220
-    .word 0x4a8f1ab6
-    .word 0x53dd37d3
-    .word 0xcc0381fa
-    .word 0x519f2e5e
-    .word 0xbc9702d0
-    .word 0x59baf035
-    .word 0x11ac8cda
-    .word 0xaaff99a4
-    .word 0x49a30f11
-    .word 0x5bd75ff4
-    .word 0x9ae179b8
-    .word 0xec334648
-    .word 0xc9233304
-    .word 0x5a7d79b7
-    .word 0xeab0c716
-    .word 0x84aba9e4
-    .word 0xa402b429
-    .word 0xfc70e0af
-    .word 0x94218a6d
-    .word 0xfe51ee4b
-    .word 0x3e8ed1bc
-    .word 0xfaeac537
-    .word 0x6393e21b
-    .word 0x49cf0cef
-    .word 0x5ba09d83
-    .word 0x7c00e903
-    .word 0xcbe1eb8e
-    .word 0xa264a4c8
-    .word 0x5b7d7c5e
-    .word 0x837b32d5
-    .word 0x6c1e17b1
-    .word 0x506c14ca
-    .word 0x16d23cbf
-    .word 0xa06a2254
-    .word 0x0c4e0434
-    .word 0xadd77371
-    .word 0xa16ebab3
-    .word 0xc3d670db
-    .word 0x5f60137e
-    .word 0xd3ca28c0
-    .word 0xea9dcbcb
-    .word 0xd0108afd
-    .word 0x54851bd7
-    .word 0x62e60588
-    .word 0x9fb7b696
-    .word 0x2f179995
-    .word 0x645ec9b1
-    .word 0x7d9684df
-    .word 0xe7ee0448
-    .word 0x4c13ca3c
-    .word 0x54c2549f
-    .word 0x0eb0a07d
-    .word 0x312f14f2
-    .word 0xd333667f
-    .word 0xcc013457
-    .word 0x9d2ce4db
-    .word 0x5ccd1bec
-    .word 0x3d739fe3
-    .word 0x980e84f8
-    .word 0x788199ca
-    .word 0x10be8651
-    .word 0x6ff2c86b
-    .word 0xe89210a5
-    .word 0x4703e7b5
-    .word 0xd46ebb3c
-    .word 0xb837bf8e
-    .word 0x176bf300
-    .word 0xb9d21aa1
-    .word 0x847233f9
-    .word 0x40d100ed
-    .word 0x601875f8
-    .word 0x53196d68
-    .word 0x376b1fea
-    .word 0x515da6f5
-    .word 0xe3710bf8
-    .word 0x3ca83516
-    .word 0x3ab81d4b
-    .word 0xf7d120a1
-    .word 0xb099eed2
-    .word 0x1ac73049
-    .word 0x084e19ba
-    .word 0xb566500c
-    .word 0xd0cca62a
-    .word 0xf864676b
-    .word 0xeda6ea79
-    .word 0xc29105f3
-    .word 0x7306c030
-    .word 0x37502fb6
+    [r]
 
     .balign 32
     zetas:

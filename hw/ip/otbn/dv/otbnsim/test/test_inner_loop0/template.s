@@ -129,7 +129,7 @@
     xor        x30, x22, x26
 
     /* overwrite r[j + len] */
-    /*sw         x30, 0(x15)*/
+    sw         x30, 0(x15)
 
     /* load r[j + len] into r4 for testing purposes */
     lw         x4, 0(x15)
@@ -144,13 +144,12 @@
     xor        x18, x22, x5
 
     /* overwrite r[j] */
-    /*sw         x18, 0(x2)*/
+    sw         x18, 0(x2)
 
     /* load r[j] into r2 for testing purposes */
     lw         x5, 0(x2)
 
     la         x1, r
-    addi       x3, x3, 21
     addi       x11, x0, [idx]
     srai       x13, x11, 1
     slli       x13, x13, 2        /* x13 : j*2 ... offset to element in r */

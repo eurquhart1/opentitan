@@ -100,13 +100,37 @@ def create_tests(inputs, dirpath):
     with open(asm_template_path, 'r') as asm_template, open(exp_template_path, 'r') as exp_template:
         asm_template = asm_template.read()
         exp_template = exp_template.read()
-        vals, asm_data = generate_otbn_data_section_16bit(r)
-        for i in range(len(r)//2):
+        init_vals, init_asm_data = generate_otbn_data_section_16bit(r)
+
+        idx = 0 + 128      # j + len
+        inp1 = r[idx]
+        inp2 = zetas[1]     # fixing zeta value for now, only modelling inner loop
+        if inp1 < 0 :
+            inp1 = to_twos_complement(inp1)
+        if inp2 < 0 :
+            inp2 = to_twos_complement(inp2)
+        a = inp1 * inp2
+        out2 = a & 65535
+        t = (a - (out2 * QINV * KYBER_Q)) >> 16
+
+        # Adjust for two's complement to interpret as a signed 16-bit integer
+        if t >= 0x8000:  # If the most significant bit is set, indicating a negative number
+            t = t - 0x10000
+
+        t = t & 0xFFFF  # Truncate to 16 bits
+
+        r[idx] = r[0] - t
+        r[0] = r[0] + t
+
+        res_vals, res_asm_data = generate_otbn_data_section_16bit(r)
+        print(str(init_vals[idx//2]) + "\t\t" + str(res_vals[idx//2]))
+        print(str(init_vals[0]) + "\t\t" + str(res_vals[0]))
+
+        for i in range(len(init_vals)):
             tmpcopy = asm_template
             # Write the input value into the template
-            tmpreplace = tmpcopy.replace("[r]", asm_data)
+            tmpreplace = tmpcopy.replace("[r]", init_asm_data)
             tmpreplace = tmpreplace.replace("[idx]", str(i*2))
-            tmpcopy = tmpreplace
             # Create a new file for this input
             new_asm_filepath = inputoutputpath + "/test" + str(i+1) + ".s"
             with open(new_asm_filepath, 'w') as newfile:
@@ -149,7 +173,7 @@ def create_tests(inputs, dirpath):
                 extra_el = r[inputs[i][0] - 1]
                 result_hex_add = ((add & 0xFFFF) << 16) ^ (extra_el & 0xFFFF)
             
-            tmpreplace = tmpcopy.replace("[val]", str(vals[i]))
+            tmpreplace = tmpcopy.replace("[val]", str(res_vals[i]))
             
             # Create a new file for this input
             new_exp_filepath = inputoutputpath + "/test" + str(i+1) + ".exp"

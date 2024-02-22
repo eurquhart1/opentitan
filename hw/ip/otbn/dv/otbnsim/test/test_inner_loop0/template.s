@@ -6,11 +6,6 @@
     la         x1, q
     addi       x3, x0, 6
     BN.LID     x3, 0(x1)          /*  w6 should now contain Q */
-    
-    /* Load QINV from memory */
-    la         x1, qinv
-    addi       x3, x0, 4
-    BN.LID     x3, 0(x1)          /*  w4 should now contain QINV */
 
     /* Load 16-bit mask from memory */
     la         x1, mask_16b
@@ -26,7 +21,7 @@
 
     /* Set looping variables to constants while iteratively building */
     addi       x7, x0, 1          /* x7 : k */
-    addi       x8, x0, 128          /* x8 : len */
+    addi       x8, x0, 2          /* x8 : len */
     addi       x9, x0, 0          /* x9 : start */
     addi       x11, x0, 0         /* x11 : j */
 
@@ -43,6 +38,10 @@
     srl        x20, x20, x24
     sll        x20, x20, x23
     srl        x20, x20, x23
+
+    addi        x7, x0, 0
+    addi        x31, x31, 2
+    loop       x31, 100
 
     /* Load r[j + len] into x16 */
     la         x1, r              /* Load base address of r from memory */
@@ -105,8 +104,8 @@
 
     BN.MULQACC.WO.Z  w3, w2.0, w4.0, 0     /* t = (int16_t)a * QINV */
     BN.AND           w3, w3, w21           /* (int32_t)t */
-    BN.MULQACC.WO.Z  w4, w3.0, w6.0, 0     /* (int32_t)t * KYBER_Q */ 
-    BN.SUB           w7, w1, w4            /* a - (int32_t)t*KYBER_Q */
+    BN.MULQACC.WO.Z  w8, w3.0, w6.0, 0     /* (int32_t)t * KYBER_Q */ 
+    BN.SUB           w7, w1, w8            /* a - (int32_t)t*KYBER_Q */
     BN.RSHI          w7, w0, w7 >> 16
     BN.AND           w7, w7, w5            /* w7 = (int16t)((a - t*Q)>>16) */
 
@@ -129,6 +128,11 @@
     xor        x30, x22, x26
 
     /* overwrite r[j + len] */
+    la         x1, r              /* Load base address of r from memory */
+    add        x12, x11, x8       /* x12 : j + len */
+    srai       x13, x12, 1        /* floor divide (j + len)//2 */
+    slli       x13, x13, 2        /* x13 : (j + len)*2 ... offset to element in r */
+    add        x15, x1, x13
     sw         x30, 0(x15)
 
     /* load r[j + len] into r4 for testing purposes */
@@ -144,14 +148,18 @@
     xor        x18, x22, x5
 
     /* overwrite r[j] */
+    la         x1, r              /* Load base address of r from memory */
+    srai       x13, x11, 1
+    slli       x13, x13, 2        /* x13 : j*2 ... offset to element in r */
+    add        x2, x1, x13        /* x1 : base address of r plus offset to element */
     sw         x18, 0(x2)
 
-    /* load r[j] into r2 for testing purposes */
-    lw         x5, 0(x2)
+    addi       x7, x7, 1
+    addi       x11, x11, 2
 
     la         x1, r
-    addi       x11, x0, [idx]
-    srai       x13, x11, 1
+    addi       x12, x0, [idx]
+    srai       x13, x12, 1
     slli       x13, x13, 2        /* x13 : j*2 ... offset to element in r */
     add        x2, x1, x13        /* x1 : base address of r plus offset to element */
     lw         x3, 0(x2)          /*  w21 should now contain 32-bit mask */

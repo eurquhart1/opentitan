@@ -102,29 +102,39 @@ def create_tests(inputs, dirpath):
         exp_template = exp_template.read()
         init_vals, init_asm_data = generate_otbn_data_section_16bit(r)
 
-        idx = 0 + 128      # j + len
-        inp1 = r[idx]
-        inp2 = zetas[1]     # fixing zeta value for now, only modelling inner loop
-        if inp1 < 0 :
-            inp1 = to_twos_complement(inp1)
-        if inp2 < 0 :
-            inp2 = to_twos_complement(inp2)
-        a = inp1 * inp2
-        out2 = a & 65535
-        t = (a - (out2 * QINV * KYBER_Q)) >> 16
+        j = 0
+        start = 0
+        length = 2
+        iter = 0
+        while j < start + length:
+            iter += 1
+            idx = 0 + 2      # j + len
+            inp1 = r[idx]
+            inp2 = zetas[1]     # fixing zeta value for now, only modelling inner loop
+            if inp1 < 0 :
+                inp1 = to_twos_complement(inp1)
+            if inp2 < 0 :
+                inp2 = to_twos_complement(inp2)
+            a = inp1 * inp2
+            out2 = a & 65535
+            t = (a - (out2 * QINV * KYBER_Q)) >> 16
 
-        # Adjust for two's complement to interpret as a signed 16-bit integer
-        if t >= 0x8000:  # If the most significant bit is set, indicating a negative number
-            t = t - 0x10000
+            # Adjust for two's complement to interpret as a signed 16-bit integer
+            if t >= 0x8000:  # If the most significant bit is set, indicating a negative number
+                t = t - 0x10000
 
-        t = t & 0xFFFF  # Truncate to 16 bits
+            t = t & 0xFFFF  # Truncate to 16 bits
 
-        r[idx] = r[0] - t
-        r[0] = r[0] + t
+            print("t:\t" + hex(t))
+            print("r[" + str(idx) + "]:" + hex(r[idx]))
+            print("r[" + str(j) + "]:" + hex(r[j]))
+            r[idx] = (r[j] - t) & 0xFFFF
+            r[j] = (r[j] + t) & 0XFFFF
+            print("r[" + str(idx) + "]:" + hex(r[idx]))
+            print("r[" + str(j) + "]:" + hex(r[j]))
+            j += 2
 
         res_vals, res_asm_data = generate_otbn_data_section_16bit(r)
-        print(str(init_vals[idx//2]) + "\t\t" + str(res_vals[idx//2]))
-        print(str(init_vals[0]) + "\t\t" + str(res_vals[0]))
 
         for i in range(len(init_vals)):
             tmpcopy = asm_template

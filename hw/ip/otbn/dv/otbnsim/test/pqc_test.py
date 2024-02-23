@@ -85,8 +85,7 @@ def to_twos_complement(value, bit_width=16):
     return twos_complement
 
 
-def create_tests(inputs, dirpath):
-
+def create_tests(dirpath):
     # Read in the input and output templates
     asm_template_path = dirpath +  "/template.s"
     exp_template_path = dirpath + "/template.exp"
@@ -96,19 +95,30 @@ def create_tests(inputs, dirpath):
     if not os.path.exists(inputoutputpath):
         os.makedirs(inputoutputpath)
 
-    # Write the new input files based on the template
     with open(asm_template_path, 'r') as asm_template, open(exp_template_path, 'r') as exp_template:
         asm_template = asm_template.read()
         exp_template = exp_template.read()
         init_vals, init_asm_data = generate_otbn_data_section_16bit(r)
 
+        # Create the input files
+        for i in range(len(init_vals)):
+            tmpcopy = asm_template
+            # Write the input value into the template
+            tmpreplace = tmpcopy.replace("[r]", init_asm_data)
+            tmpreplace = tmpreplace.replace("[idx]", str(i*2))
+            # Create a new file for this input
+            new_asm_filepath = inputoutputpath + "/test" + str(i) + ".s"
+            with open(new_asm_filepath, 'w') as newfile:
+                newfile.write(tmpreplace)
+
+        # Calculate the new values of r
         j = 0
         start = 0
         length = 2
         iter = 0
         while j < start + length:
             iter += 1
-            idx = 0 + 2      # j + len
+            idx = j + length     # j + len
             inp1 = r[idx]
             inp2 = zetas[1]     # fixing zeta value for now, only modelling inner loop
             if inp1 < 0 :
@@ -116,7 +126,7 @@ def create_tests(inputs, dirpath):
             if inp2 < 0 :
                 inp2 = to_twos_complement(inp2)
             a = inp1 * inp2
-            out2 = a & 65535
+            out2 = a & 0xFFFF
             t = (a - (out2 * QINV * KYBER_Q)) >> 16
 
             # Adjust for two's complement to interpret as a signed 16-bit integer
@@ -132,61 +142,32 @@ def create_tests(inputs, dirpath):
             r[j] = (r[j] + t) & 0XFFFF
             print("r[" + str(idx) + "]:" + hex(r[idx]))
             print("r[" + str(j) + "]:" + hex(r[j]))
-            j += 2
+            if j == 0:
+                rjog = r[j]
+                rjg1 = r[j+1]
+            j += 1
+        print(j)
+        print([hex(x) for x in r])
 
         res_vals, res_asm_data = generate_otbn_data_section_16bit(r)
+        for res in res_vals:
+            print(res)
 
+        # Create the output files
         for i in range(len(init_vals)):
-            tmpcopy = asm_template
-            # Write the input value into the template
-            tmpreplace = tmpcopy.replace("[r]", init_asm_data)
-            tmpreplace = tmpreplace.replace("[idx]", str(i*2))
-            # Create a new file for this input
-            new_asm_filepath = inputoutputpath + "/test" + str(i+1) + ".s"
-            with open(new_asm_filepath, 'w') as newfile:
-                newfile.write(tmpreplace)
-
             tmpcopy = exp_template
 
-            idx = inputs[i][0] + inputs[i][1]       # j + len
-            inp1 = r[idx]
-            inp2 = zetas[inputs[i][2]]     # fixing zeta value for now, only modelling inner loop
-            if inp1 < 0 :
-                inp1 = to_twos_complement(inp1)
-            if inp2 < 0 :
-                inp2 = to_twos_complement(inp2)
-            a = inp1 * inp2
-            out2 = a & 65535
-            t = (a - (out2 * QINV * KYBER_Q)) >> 16
-
-            # Adjust for two's complement to interpret as a signed 16-bit integer
-            if t >= 0x8000:  # If the most significant bit is set, indicating a negative number
-                t = t - 0x10000
-
-            t = t & 0xFFFF  # Truncate to 16 bits
+            tmpreplace = tmpcopy.replace("[zeta]", str(inp2))
+            tmpreplace = tmpreplace.replace("[a]", str(a))
+            tmpreplace = tmpreplace.replace("[a16]", str(out2))
+            tmpreplace = tmpreplace.replace("[t]", str(t))
+            tmpreplace = tmpreplace.replace("[ridx]", str(res_vals[idx//2]))
+            tmpreplace = tmpreplace.replace("[rj]", str(res_vals[(j-1)//2]))        # remember j gets updated an extra time in python
+            tmpreplace = tmpreplace.replace("[rjog]", str(rjog))
+            tmpreplace = tmpreplace.replace("[rjg1]", str(rjg1))
             
-            mod = idx % 2
-            sub = r[inputs[i][0]] - t
-            if mod == 0:
-                extra_el = r[idx + 1]
-                result_hex_sub = ((extra_el & 0xFFFF) << 16) ^ (sub & 0XFFFF)
-            else:
-                extra_el = r[idx - 1]
-                result_hex_sub = ((sub & 0xFFFF) << 16) ^ (extra_el & 0xFFFF)
-
-            mod = inputs[i][0] % 2
-            add = r[inputs[i][0]] + t
-            if mod == 0:
-                extra_el = r[inputs[i][0] + 1]
-                result_hex_add = ((extra_el & 0xFFFF) << 16) ^ (add & 0XFFFF)
-            else:
-                extra_el = r[inputs[i][0] - 1]
-                result_hex_add = ((add & 0xFFFF) << 16) ^ (extra_el & 0xFFFF)
-            
-            tmpreplace = tmpcopy.replace("[val]", str(res_vals[i]))
-            
-            # Create a new file for this input
-            new_exp_filepath = inputoutputpath + "/test" + str(i+1) + ".exp"
+            # Create a new file for this output
+            new_exp_filepath = inputoutputpath + "/test" + str(i) + ".exp"
             with open(new_exp_filepath, 'w') as newfile:
                 newfile.write(tmpreplace)
 
@@ -196,52 +177,9 @@ def create_tests(inputs, dirpath):
 def pytest_generate_tests(metafunc: Any) -> None:
     if metafunc.function is test_fn:
         tests = list()
-        testaddbn_flag = os.environ.get('BN')
-        testmontmul_flag = os.environ.get('MM')
-        testfqmul_flag = os.environ.get('FQ')
-        testloop0_flag = os.environ.get('L0')
         
-        if testaddbn_flag is not None:
-            # Define the input list
-            pairs = [(x, y) for x in range(5) for y in range(5)]
-
-            # Create all of the input/output files in the /testadd directory
-            tests += create_tests(pairs, "test/testaddbn")
-
-        if testmontmul_flag is not None:
-            # Define the input list
-            pairs = [x for x in range(1, 2147483647, 10000000)]
-
-            # Create all of the input/output files in the /testadd directory
-            tests += create_tests(pairs, "test/test_montmul")
-
-        if testfqmul_flag is not None:
-            # Define the input list
-            pairs = [(x, y) for x in range(1, 2147483647, 100000000) for y in range(1, 2147483647, 100000000)]
-
-            # Create all of the input/output files in the /testadd directory
-            tests += create_tests(pairs, "test/test_fqmul")
-
-        if testloop0_flag is not None:
-            # Define the input list
-            #pairs = [(x,y) for x in range(128) for y in range(128)]
-            inps = []
-
-            k = 1
-            len = 128
-            while len >= 2:
-                start = 0
-                while start < 256:
-                    j = start
-                    while j < start + len:
-                        inps.append([j, len, k])
-                        j += 1
-                    start = j + len
-                    k += 1
-                len >>= 1
-
-            # Create all of the input/output files in the /testadd directory
-            tests += create_tests(inps, "test/test_inner_loop0")
+        # Create all of the input/output files in the /testadd directory
+        tests += create_tests("test/test_inner_loop0")
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)

@@ -165,6 +165,7 @@ def create_tests(dirpath):
             tmpreplace = tmpreplace.replace("[rj]", str(res_vals[(j-1)//2]))        # remember j gets updated an extra time in python
             tmpreplace = tmpreplace.replace("[rjog]", str(rjog))
             tmpreplace = tmpreplace.replace("[rjg1]", str(rjg1))
+            tmpreplace = tmpreplace.replace("[val]", str(res_vals[i]))
             
             # Create a new file for this output
             new_exp_filepath = inputoutputpath + "/test" + str(i) + ".exp"

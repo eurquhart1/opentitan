@@ -51,8 +51,8 @@
     add        x12, x11, x8       /* x12 : j + len */
     srai       x13, x12, 1        /* floor divide (j + len)//2 */
     slli       x13, x13, 2        /* x13 : (j + len)*2 ... offset to element in r */
-    add        x15, x1, x13        /* x1 : base address of r plus offset to element */
-    lw         x26, 0(x15)
+    add        x2, x1, x13        /* x1 : base address of r plus offset to element */
+    lw         x26, 0(x2)
     and        x18, x12, 1        /* (j + len) mod 2 */
     xor        x17, x18, 1        /* inverse */
     slli       x23, x18, 4        /* shift idx left by 4 */
@@ -126,18 +126,18 @@
     sll        x28, x27, x23
     sll        x22, x22, x23
     and        x22, x22, x28
-    xor        x30, x22, x26
+    xor        x3, x22, x26
 
     /* overwrite r[j + len] */
     la         x1, r              /* Load base address of r from memory */
     add        x12, x11, x8       /* x12 : j + len */
     srai       x13, x12, 1        /* floor divide (j + len)//2 */
     slli       x13, x13, 2        /* x13 : (j + len)*2 ... offset to element in r */
-    add        x15, x1, x13
-    sw         x30, 0(x15)
+    add        x2, x1, x13
+    sw         x3, 0(x2)
 
     /* load r[j + len] into r4 for testing purposes */
-    lw         x4, 0(x15)
+    lw         x4, 0(x2)
 
     /* Add: r[j] + t into x22 */
     add        x22, x19, x21

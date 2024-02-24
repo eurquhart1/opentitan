@@ -114,12 +114,13 @@ def create_tests(dirpath):
         # Calculate the new values of r
         j = 0
         start = 0
-        length = 2
+        length = 4
         iter = 0
         while j < start + length:
             iter += 1
             idx = j + length     # j + len
-            inp1 = r[idx]
+            inp1 = r[idx] & 0XFFFF
+            rjo = r[j] & 0xFFFF
             inp2 = zetas[1]     # fixing zeta value for now, only modelling inner loop
             if inp1 < 0 :
                 inp1 = to_twos_complement(inp1)
@@ -135,16 +136,8 @@ def create_tests(dirpath):
 
             t = t & 0xFFFF  # Truncate to 16 bits
 
-            print("t:\t" + hex(t))
-            print("r[" + str(idx) + "]:" + hex(r[idx]))
-            print("r[" + str(j) + "]:" + hex(r[j]))
             r[idx] = (r[j] - t) & 0xFFFF
             r[j] = (r[j] + t) & 0XFFFF
-            print("r[" + str(idx) + "]:" + hex(r[idx]))
-            print("r[" + str(j) + "]:" + hex(r[j]))
-            if j == 0:
-                rjog = r[j]
-                rjg1 = r[j+1]
             j += 1
         print(j)
         print([hex(x) for x in r])
@@ -163,9 +156,9 @@ def create_tests(dirpath):
             tmpreplace = tmpreplace.replace("[t]", str(t))
             tmpreplace = tmpreplace.replace("[ridx]", str(res_vals[idx//2]))
             tmpreplace = tmpreplace.replace("[rj]", str(res_vals[(j-1)//2]))        # remember j gets updated an extra time in python
-            tmpreplace = tmpreplace.replace("[rjog]", str(rjog))
-            tmpreplace = tmpreplace.replace("[rjg1]", str(rjg1))
             tmpreplace = tmpreplace.replace("[val]", str(res_vals[i]))
+            tmpreplace = tmpreplace.replace("[rjli]", str(inp1))
+            tmpreplace = tmpreplace.replace("[rjo]", str(rjo))
             
             # Create a new file for this output
             new_exp_filepath = inputoutputpath + "/test" + str(i) + ".exp"

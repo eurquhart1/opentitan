@@ -114,7 +114,7 @@ def create_tests(dirpath):
         # Calculate the new values of r
         j = 0
         start = 0
-        length = 4
+        length = 128
         iter = 0
         while j < start + length:
             iter += 1

@@ -112,35 +112,40 @@ def create_tests(dirpath):
                 newfile.write(tmpreplace)
 
         # Calculate the new values of r
-        j = 0
-        start = 0
-        length = 128
         iter = 0
-        while j < start + length:
-            iter += 1
-            idx = j + length     # j + len
-            inp1 = r[idx] & 0XFFFF
-            rjo = r[j] & 0xFFFF
-            inp2 = zetas[1]     # fixing zeta value for now, only modelling inner loop
-            if inp1 < 0 :
-                inp1 = to_twos_complement(inp1)
-            if inp2 < 0 :
-                inp2 = to_twos_complement(inp2)
-            a = inp1 * inp2
-            out2 = a & 0xFFFF
-            t = (a - (out2 * QINV * KYBER_Q)) >> 16
+        k = 1
+        length = 128
+        while length >= 2:
+            start = 0
+            while start < 256:
+                inp2 = zetas[k]
+                k += 1
+                j = start
+                while j < start + length:
+                    iter += 1
+                    idx = j + length     # j + len
+                    print(str(j) + "\t" + str(start + length))
+                    inp1 = r[idx] & 0XFFFF
+                    rjo = r[j] & 0xFFFF
+                    if inp1 < 0 :
+                        inp1 = to_twos_complement(inp1)
+                    if inp2 < 0 :
+                        inp2 = to_twos_complement(inp2)
+                    a = inp1 * inp2
+                    out2 = a & 0xFFFF
+                    t = (a - (out2 * QINV * KYBER_Q)) >> 16
 
-            # Adjust for two's complement to interpret as a signed 16-bit integer
-            if t >= 0x8000:  # If the most significant bit is set, indicating a negative number
-                t = t - 0x10000
+                    # Adjust for two's complement to interpret as a signed 16-bit integer
+                    if t >= 0x8000:  # If the most significant bit is set, indicating a negative number
+                        t = t - 0x10000
 
-            t = t & 0xFFFF  # Truncate to 16 bits
+                    t = t & 0xFFFF  # Truncate to 16 bits
 
-            r[idx] = (r[j] - t) & 0xFFFF
-            r[j] = (r[j] + t) & 0XFFFF
-            j += 1
-        print(j)
-        print([hex(x) for x in r])
+                    r[idx] = (r[j] - t) & 0xFFFF
+                    r[j] = (r[j] + t) & 0XFFFF
+                    j += 1
+                start = j + length
+            length >>= 1
 
         res_vals, res_asm_data = generate_otbn_data_section_16bit(r)
         for res in res_vals:

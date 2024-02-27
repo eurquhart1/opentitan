@@ -27,8 +27,19 @@
     /* Set looping variables to constants while iteratively building */
     addi       x7, x0, 1          /* x7 : k */
     addi       x8, x0, 128          /* x8 : len */
+    addi       x25, x0, 256         /* lim start */
+    addi       x15, x0, 1         /* lim len */
+
+looplen:
     addi       x9, x0, 0          /* x9 : start */
-    addi       x11, x0, 0         /* x11 : j */
+
+    /* loopi          1, 2 */
+loopstart:
+    jal        x0, body
+    /* nop */
+
+body:
+    add        x11, x0, x9         /* x11 : j = start */
 
     /* Load zeta into x20 */
     la         x1, zetas              /* Load base address of zetas from memory */
@@ -44,7 +55,9 @@
     sll        x20, x20, x23
     srl        x20, x20, x23
 
-    loopi       128, 89
+    addi       x7, x7, 1            /* k++ */
+
+    loop       x8, 89
     
     /* Load r[j + len] into x16 */
     la         x1, r              /* Load base address of r from memory */
@@ -160,6 +173,12 @@
     lw         x5, 0(x2)
     addi       x11, x11, 1
 
+    add        x9, x11, x8          /* start = j + len */
+    bne        x9, x25, loopstart
+
+    srli       x8, x8, 1            /* len >>= 1 */
+    bne        x8, x15, looplen
+
     la         x1, r
     addi       x12, x0, [idx]
     srai       x13, x12, 1
@@ -167,6 +186,7 @@
     add        x2, x1, x13        /* x1 : base address of r plus offset to element */
     lw         x3, 0(x2)          /*  w21 should now contain 32-bit mask */
 
+end:
     ecall
 
 .data

@@ -67,7 +67,7 @@ body:
 
     addi       x7, x7, 1            /* k++ */
 
-    /* loop       x8, 89 */
+    loopi       3, 102
     
     /* Load r[j + len] into x16 */
     la         x1, r              /* Load base address of r from memory */
@@ -134,13 +134,20 @@ body:
 
     BN.MULQACC.WO.Z  w10, w1.0, w2.0, 0     /* w1 = a */
 
-    BN.AND      w10, w10, w21
+    /*BN.AND      w10, w10, w21*/
 
     BN.AND     w9, w5, w10         /*  (int16_t)a */
 
     BN.MULQACC.WO.Z  w3, w9.0, w4.0, 0     /* t = (int16_t)a * QINV */
-    BN.AND           w3, w3, w5           /* (int32_t)t */
-    BN.MULQACC.WO.Z  w8, w3.0, w6.0, 0     /* (int32_t)t * KYBER_Q */ 
+    BN.AND           w3, w3, w5           /* (int32_t)t */ 
+
+    BN.RSHI     w18, w0, w3 >> 15 
+    BN.AND      w11, w18, w12       /* w11 is 0 if positive, 1 if negative */
+    BN.MULQACC.WO.Z  w11, w13.0, w11.0, 0 
+    BN.XOR      w3, w11, w3
+
+    BN.MULQACC.WO.Z  w8, w3.0, w6.0, 0     /* (int32_t)t * KYBER_Q */
+
     BN.SUB           w7, w10, w8            /* a - (int32_t)t*KYBER_Q */
     BN.RSHI          w7, w0, w7 >> 16 
     BN.AND           w7, w7, w5             /* w7 = (int16t)((a - t*Q)>>16) */

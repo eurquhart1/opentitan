@@ -67,7 +67,7 @@ body:
 
     addi       x7, x7, 1            /* k++ */
 
-    loopi       3, 102
+    loopi       128, 102
     
     /* Load r[j + len] into x16 */
     la         x1, r              /* Load base address of r from memory */

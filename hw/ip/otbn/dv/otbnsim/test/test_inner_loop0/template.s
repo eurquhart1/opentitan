@@ -12,6 +12,11 @@
     addi       x3, x0, 4
     BN.LID     x3, 0(x1)          /*  w4 should now contain QINV */
 
+    /* Load one from memory */
+    la         x1, qinv
+    addi       x3, x0, 12
+    BN.LID     x3, 0(x1)          /*  w12 should now contain 1b mask */
+
     /* Load 16-bit mask from memory */
     la         x1, mask_16b
     addi       x3, x0, 5
@@ -23,6 +28,11 @@
     la         x1, mask_32b
     addi       x3, x0, 21
     BN.LID     x3, 0(x1)          /*  w21 should now contain 32-bit mask */
+
+    /* Load 64-bit mask from memory */
+    la         x1, mask_64b
+    addi       x3, x0, 13
+    BN.LID     x3, 0(x1)          /*  w13 should now contain 64-bit mask */
 
     /* Set looping variables to constants while iteratively building */
     addi       x7, x0, 1          /* x7 : k */
@@ -57,7 +67,7 @@ body:
 
     addi       x7, x7, 1            /* k++ */
 
-    loop       x8, 89
+    /*loop       x8, 89*/
     
     /* Load r[j + len] into x16 */
     la         x1, r              /* Load base address of r from memory */
@@ -112,16 +122,29 @@ body:
     addi       x3, x0, 2
     BN.LID     x3, 0(x1)          /*  w2 should now contain r_j_len */
 
+    /* Load 64-bit mask from memory */
+    la         x1, z
+    addi       x3, x0, 1
+    BN.LID     x3, 0(x1)          /*  w13 should now contain 64-bit mask */
+
+    /* Load 64-bit mask from memory */
+    la         x1, ropp
+    addi       x3, x0, 2
+    BN.LID     x3, 0(x1)          /*  w13 should now contain 64-bit mask */
+
     BN.MULQACC.WO.Z  w10, w1.0, w2.0, 0     /* w1 = a */
+
+    BN.AND      w10, w10, w21
 
     BN.AND     w9, w5, w10         /*  (int16_t)a */
 
     BN.MULQACC.WO.Z  w3, w9.0, w4.0, 0     /* t = (int16_t)a * QINV */
-    BN.AND           w3, w3, w21           /* (int32_t)t */
+    BN.AND           w3, w3, w5           /* (int32_t)t */
     BN.MULQACC.WO.Z  w8, w3.0, w6.0, 0     /* (int32_t)t * KYBER_Q */ 
-    BN.SUB           w7, w10, w8            /* a - (int32_t)t*KYBER_Q */
-    BN.RSHI          w7, w0, w7 >> 16
-    BN.AND           w7, w7, w5            /* w7 = (int16t)((a - t*Q)>>16) */
+    /*BN.SUB           w7, w10, w8     */       /* a - (int32_t)t*KYBER_Q */
+    /*BN.AND           w7, w7, w5 */
+    /*BN.RSHI          w7, w0, w7 >> 16 */
+    /* BN.AND           w7, w7, w5 */            /* w7 = (int16t)((a - t*Q)>>16) */
 
     /* Store result t to memory */
     la         x1, t
@@ -174,10 +197,10 @@ body:
     addi       x11, x11, 1
 
     add        x9, x11, x8          /* start = j + len */
-    bne        x9, x25, loopstart
+    /*bne        x9, x25, loopstart*/
 
     srli       x8, x8, 1            /* len >>= 1 */
-    bne        x8, x15, looplen
+    /*bne        x8, x15, looplen*/
 
     la         x1, r
     addi       x12, x0, [idx]
@@ -271,6 +294,28 @@ end:
     .dword 0x0
 
     .balign 32
+    one:
+    .word  0x1  /* Q = 3329 */
+    .word  0x0
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    z:
+    .dword 0xfffffffffffffd0a  /* Q = 3329 */
+    .dword 0xffffffffffffffff
+    .dword 0xffffffffffffffff
+    .dword 0xffffffffffffffff
+
+    .balign 32
+    ropp:
+    .dword 0xffffffffffff9d83  /* Q = 3329 */
+    .dword 0xffffffffffffffff
+    .dword 0xffffffffffffffff
+    .dword 0xffffffffffffffff
+
+    .balign 32
     qinv:
     .word  0xf301  /* -3327 in 32-bit two's complement */
     .word  0x0
@@ -289,6 +334,13 @@ end:
     .balign 32
     mask_32b:
     .dword  0xffffffff  /* 32 set bits */
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    mask_64b:
+    .dword  0xffffffffffffffff  /* 32 set bits */
     .dword 0x0
     .dword 0x0
     .dword 0x0

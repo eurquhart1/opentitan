@@ -2,6 +2,7 @@ from simple_test import find_tests, helper_test_count
 import os, py
 from typing import Any
 from pathlib import Path
+from ctypes import *
 
 QINV = 62209
 KYBER_Q = 3329
@@ -84,7 +85,6 @@ def to_twos_complement(value, bit_width=16):
     
     return twos_complement
 
-
 def create_tests(dirpath):
     # Read in the input and output templates
     asm_template_path = dirpath +  "/template.s"
@@ -101,74 +101,43 @@ def create_tests(dirpath):
         init_vals, init_asm_data = generate_otbn_data_section_16bit(r)
 
         # Create the input files
-        for i in range(len(init_vals)):
-            tmpcopy = asm_template
-            # Write the input value into the template
-            tmpreplace = tmpcopy.replace("[r]", init_asm_data)
-            tmpreplace = tmpreplace.replace("[idx]", str(i*2))
-            # Create a new file for this input
-            new_asm_filepath = inputoutputpath + "/test" + str(i) + ".s"
-            with open(new_asm_filepath, 'w') as newfile:
-                newfile.write(tmpreplace)
+        #for i in range(len(init_vals)):
+        tmpcopy = asm_template
+        # Write the input value into the template
+        tmpreplace = tmpcopy.replace("[r]", init_asm_data)
+        tmpreplace = tmpreplace.replace("[idx]", str(2))
+        # Create a new file for this input
+        new_asm_filepath = inputoutputpath + "/test_1" + ".s"
+        with open(new_asm_filepath, 'w') as newfile:
+            newfile.write(tmpreplace)
 
-        # Calculate the new values of r
-        iter = 0
-        k = 1
-        length = 128
-        while length >= 2:
-            start = 0
-            while start < 256:
-                inp2 = zetas[k]
-                k += 1
-                j = start
-                while j < start + length:
-                    iter += 1
-                    idx = j + length     # j + len
-                    print(str(j) + "\t" + str(start + length))
-                    inp1 = r[idx] & 0XFFFF
-                    rjo = r[j] & 0xFFFF
-                    if inp1 < 0 :
-                        inp1 = to_twos_complement(inp1)
-                    if inp2 < 0 :
-                        inp2 = to_twos_complement(inp2)
-                    a = inp1 * inp2
-                    out2 = a & 0xFFFF
-                    t = (a - (out2 * QINV * KYBER_Q)) >> 16
+        # Calculate the new values of t
+        # Run the C code using ctypes
+        # Load the shared library
+        lib = CDLL('/home/eu233/opentitan/hw/ip/otbn/dv/otbnsim/test/kyber_ntt.so')
 
-                    # Adjust for two's complement to interpret as a signed 16-bit integer
-                    if t >= 0x8000:  # If the most significant bit is set, indicating a negative number
-                        t = t - 0x10000
+        # Define the return type of the function
+        lib.ntt.restype = c_int
+        lib.ntt.argtypes = [POINTER(c_short)]
+        
+        r_arr = (c_short * len(r))(*r)
 
-                    t = t & 0xFFFF  # Truncate to 16 bits
+        # Call the function (no arguments needed in this case)
+        t = lib.ntt(r_arr)
+        #t = t & 0xFFFF      # treat value as unsigned
 
-                    r[idx] = (r[j] - t) & 0xFFFF
-                    r[j] = (r[j] + t) & 0XFFFF
-                    j += 1
-                start = j + length
-            length >>= 1
-
-        res_vals, res_asm_data = generate_otbn_data_section_16bit(r)
-        for res in res_vals:
-            print(res)
+        #res_vals, res_asm_data = generate_otbn_data_section_16bit(c_r)
 
         # Create the output files
-        for i in range(len(init_vals)):
-            tmpcopy = exp_template
+        #for i in range(len(res_vals)):
+        tmpcopy = exp_template
 
-            tmpreplace = tmpcopy.replace("[zeta]", str(inp2))
-            tmpreplace = tmpreplace.replace("[a]", str(a))
-            tmpreplace = tmpreplace.replace("[a16]", str(out2))
-            tmpreplace = tmpreplace.replace("[t]", str(t))
-            tmpreplace = tmpreplace.replace("[ridx]", str(res_vals[idx//2]))
-            tmpreplace = tmpreplace.replace("[rj]", str(res_vals[(j-1)//2]))        # remember j gets updated an extra time in python
-            tmpreplace = tmpreplace.replace("[val]", str(res_vals[i]))
-            tmpreplace = tmpreplace.replace("[rjli]", str(inp1))
-            tmpreplace = tmpreplace.replace("[rjo]", str(rjo))
+        tmpreplace = tmpcopy.replace("[t]", str(t))        # remember j gets updated an extra time in python
             
-            # Create a new file for this output
-            new_exp_filepath = inputoutputpath + "/test" + str(i) + ".exp"
-            with open(new_exp_filepath, 'w') as newfile:
-                newfile.write(tmpreplace)
+        # Create a new file for this output
+        new_exp_filepath = inputoutputpath + "/test_1" + ".exp"
+        with open(new_exp_filepath, 'w') as newfile:
+            newfile.write(tmpreplace)
 
     return find_tests("test_inner_loop0/inputoutput")
 

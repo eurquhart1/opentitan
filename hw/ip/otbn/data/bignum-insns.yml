@@ -74,6 +74,38 @@
       funct3: b111
       wrd: wrd
 
+- mnemonic: bn.mulvec
+  synopsis: Vectorized Multiply
+  operands:
+    - &mulvec-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &mulvec-wrs1
+      name: wrs1
+      doc: First source WDR.
+    - &mulvec-wrs2
+      name: wrs2
+      doc: Second source WDR.
+  syntax: |
+    <wrd>, <wrs1>, <wrs2>
+  doc: |
+    Performs a vectorized multiply operation across each 32-bit lane of the 256-bit registers.
+    Each lane of `<wrs1>` is multiplied by the corresponding lane of `<wrs2>`, with the result stored in `<wrd>`.
+    Each multiplication is modulo 2^32.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs1, wrs2]
+  encoding:
+    scheme: bnv
+    mapping:
+      wrd: wrd  # Destination register (5 bits to address 32 registers)
+      wrs1: wrs1 # First source register (5 bits to address 32 registers)
+      wrs2: wrs2  # Second source register (5 bits to address 32 registers)
+      funct3: b100
+      funct7: b1111111
+
+
 - mnemonic: bn.addc
   synopsis: Add with Carry
   operands: *bn-add-operands

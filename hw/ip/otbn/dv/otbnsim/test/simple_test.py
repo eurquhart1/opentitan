@@ -216,8 +216,8 @@ def otbn_sim_test(args_list):
                     actual_value_unsigned = actual_value
 
                 # Truncate both expected and actual values to the lowest 32 bits. this is just to eliminate all of the 1s introduced by 2s complement right shift in python
-                expected_value_truncated = expected_value_unsigned & 0xFFFFFFFF
-                actual_value_truncated = actual_value_unsigned & 0xFFFFFFFF
+                expected_value_truncated = expected_value_unsigned
+                actual_value_truncated = actual_value_unsigned
             
                 if reg.startswith('w'):
                     # Now compare the truncated values

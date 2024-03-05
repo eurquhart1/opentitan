@@ -117,14 +117,14 @@ def create_tests(dirpath):
         lib = CDLL('/home/eu233/opentitan/hw/ip/otbn/dv/otbnsim/test/kyber_ntt.so')
 
         # Define the return type of the function
-        lib.ntt.restype = c_int
+        lib.ntt.restype = c_short
         lib.ntt.argtypes = [POINTER(c_short)]
         
         r_arr = (c_short * len(r))(*r)
 
         # Call the function (no arguments needed in this case)
         t = lib.ntt(r_arr)
-        #t = t & 0xFFFF      # treat value as unsigned
+        t = t & 0xFFFF      # treat value as unsigned
 
         #res_vals, res_asm_data = generate_otbn_data_section_16bit(c_r)
 

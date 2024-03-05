@@ -13,7 +13,7 @@
     BN.LID     x3, 0(x1)          /*  w4 should now contain QINV */
 
     /* Load one from memory */
-    la         x1, qinv
+    la         x1, one
     addi       x3, x0, 12
     BN.LID     x3, 0(x1)          /*  w12 should now contain 1b mask */
 
@@ -67,7 +67,7 @@ body:
 
     addi       x7, x7, 1            /* k++ */
 
-    /*loop       x8, 89*/
+    /* loop       x8, 89 */
     
     /* Load r[j + len] into x16 */
     la         x1, r              /* Load base address of r from memory */
@@ -122,15 +122,15 @@ body:
     addi       x3, x0, 2
     BN.LID     x3, 0(x1)          /*  w2 should now contain r_j_len */
 
-    /* Load 64-bit mask from memory */
-    la         x1, z
-    addi       x3, x0, 1
-    BN.LID     x3, 0(x1)          /*  w13 should now contain 64-bit mask */
+    BN.RSHI     w11, w0, w1 >> 15
+    BN.AND      w11, w11, w12       /* w11 is 0 if positive, 1 if negative */
+    BN.MULQACC.WO.Z  w11, w13.0, w11.0, 0 
+    BN.XOR      w1, w11, w1
 
-    /* Load 64-bit mask from memory */
-    la         x1, ropp
-    addi       x3, x0, 2
-    BN.LID     x3, 0(x1)          /*  w13 should now contain 64-bit mask */
+    BN.RSHI     w11, w0, w2 >> 15
+    BN.AND      w11, w11, w12       /* w11 is 0 if positive, 1 if negative */
+    BN.MULQACC.WO.Z  w11, w13.0, w11.0, 0 
+    BN.XOR      w2, w11, w2
 
     BN.MULQACC.WO.Z  w10, w1.0, w2.0, 0     /* w1 = a */
 
@@ -141,10 +141,9 @@ body:
     BN.MULQACC.WO.Z  w3, w9.0, w4.0, 0     /* t = (int16_t)a * QINV */
     BN.AND           w3, w3, w5           /* (int32_t)t */
     BN.MULQACC.WO.Z  w8, w3.0, w6.0, 0     /* (int32_t)t * KYBER_Q */ 
-    /*BN.SUB           w7, w10, w8     */       /* a - (int32_t)t*KYBER_Q */
-    /*BN.AND           w7, w7, w5 */
-    /*BN.RSHI          w7, w0, w7 >> 16 */
-    /* BN.AND           w7, w7, w5 */            /* w7 = (int16t)((a - t*Q)>>16) */
+    BN.SUB           w7, w10, w8            /* a - (int32_t)t*KYBER_Q */
+    BN.RSHI          w7, w0, w7 >> 16 
+    BN.AND           w7, w7, w5             /* w7 = (int16t)((a - t*Q)>>16) */
 
     /* Store result t to memory */
     la         x1, t
@@ -340,7 +339,7 @@ end:
 
     .balign 32
     mask_64b:
-    .dword  0xffffffffffffffff  /* 32 set bits */
+    .dword  0xffffffffffff0000  /* 32 set bits */
     .dword 0x0
     .dword 0x0
     .dword 0x0

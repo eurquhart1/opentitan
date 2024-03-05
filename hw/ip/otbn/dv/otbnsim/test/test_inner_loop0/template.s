@@ -67,7 +67,7 @@ body:
 
     addi       x7, x7, 1            /* k++ */
 
-    loopi       128, 102
+    loop       x8, 102
     
     /* Load r[j + len] into x16 */
     la         x1, r              /* Load base address of r from memory */
@@ -203,10 +203,10 @@ body:
     addi       x11, x11, 1
 
     add        x9, x11, x8          /* start = j + len */
-    /*bne        x9, x25, loopstart*/
+    bne        x9, x25, loopstart
 
     srli       x8, x8, 1            /* len >>= 1 */
-    /*bne        x8, x15, looplen*/
+    bne        x8, x15, looplen
 
     la         x1, r
     addi       x12, x0, [idx]

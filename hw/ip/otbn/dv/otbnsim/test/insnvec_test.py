@@ -41,6 +41,17 @@ def multiply_arrays_elementwise(arr1, arr2):
     return result
 
 
+def add_arrays_elementwise(arr1, arr2):
+    """Add the low 16 bits of elements of two arrays element-wise, and store the result as 32-bit integers."""
+    if len(arr1) != 8 or len(arr2) != 8:
+        raise ValueError("Both arrays must contain exactly 8 elements.")
+    
+    # Mask to extract the low 16 bits: 0xFFFF
+    # Multiply the extracted 16-bit values, result fits within 32 bits
+    result = [((a & 0xFFFF) + (b & 0xFFFF)) for a, b in zip(arr1, arr2)]
+    return result
+
+
 def generate_random_int16_arrays():
     # Define the range for 16-bit integers
     min_val, max_val = -32768, 32767
@@ -53,7 +64,7 @@ def generate_random_int16_arrays():
     return (array1, array2)
 
 
-def create_tests(dirpath, inputs):
+def create_tests_bnvecmul(dirpath, inputs):
     # Read in the input and output templates
     asm_template_path = dirpath +  "/template.s"
     exp_template_path = dirpath + "/template.exp"
@@ -95,6 +106,48 @@ def create_tests(dirpath, inputs):
 
     return find_tests("test_bnvecmul/inputoutput")
 
+def create_tests_bnvecadd(dirpath, inputs):
+    # Read in the input and output templates
+    asm_template_path = dirpath +  "/template.s"
+    exp_template_path = dirpath + "/template.exp"
+
+    # Create an /inputoutput directory if it does not already exist
+    inputoutputpath = dirpath + '/inputoutput'
+    if not os.path.exists(inputoutputpath):
+        os.makedirs(inputoutputpath)
+
+    with open(asm_template_path, 'r') as asm_template, open(exp_template_path, 'r') as exp_template:
+        asm_template = asm_template.read()
+        exp_template = exp_template.read()
+
+        # Create the input files
+        for i in range(len(inputs)):
+            
+            input = inputs[i]
+            result = add_arrays_elementwise(input[0], input[1])
+            out = array_to_hex_le(result)
+            tmpcopy = asm_template
+            # Write the input value into the template
+            tmpreplace = tmpcopy.replace("[inp1]", generate_otbn_data_section_32bit(input[0]))
+            tmpreplace = tmpreplace.replace("[inp2]", generate_otbn_data_section_32bit(input[1]))
+            # Create a new file for this input
+            new_asm_filepath = inputoutputpath + "/test" + str(i) + ".s"
+            with open(new_asm_filepath, 'w') as newfile:
+                newfile.write(tmpreplace)
+
+            tmpcopy = exp_template
+
+            tmpreplace = tmpcopy.replace("[out]", "0x" + str(out))
+            tmpreplace = tmpreplace.replace("[inp1]", "0x" + array_to_hex_le(input[0]))
+            tmpreplace = tmpreplace.replace("[inp2]", "0x" + array_to_hex_le(input[1]))
+            
+            # Create a new file for this output
+            new_exp_filepath = inputoutputpath + "/test" + str(i) + ".exp"
+            with open(new_exp_filepath, 'w') as newfile:
+                newfile.write(tmpreplace)
+
+    return find_tests("test_bnvecadd/inputoutput")
+
 
 def pytest_generate_tests(metafunc: Any) -> None:
     if metafunc.function is test_fn:
@@ -107,7 +160,8 @@ def pytest_generate_tests(metafunc: Any) -> None:
             input_pairs.append([el1, el2])
         
         # Create all of the input/output files in the /testadd directory
-        tests += create_tests("test/test_bnvecmul", input_pairs)
+        #tests += create_tests_bnvecmul("test/test_bnvecmul", input_pairs)
+        tests += create_tests_bnvecadd("test/test_bnvecadd", input_pairs)
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)

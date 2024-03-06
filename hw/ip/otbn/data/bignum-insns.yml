@@ -106,6 +106,38 @@
       funct7: b1111111
 
 
+- mnemonic: bn.addvec
+  synopsis: Vectorized Add
+  operands:
+    - &addvec-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &addvec-wrs1
+      name: wrs1
+      doc: First source WDR.
+    - &addvec-wrs2
+      name: wrs2
+      doc: Second source WDR.
+  syntax: |
+    <wrd>, <wrs1>, <wrs2>
+  doc: |
+    Performs a vectorized addition operation across each 32-bit lane of the 256-bit registers.
+    Each lane of `<wrs1>` is added to the corresponding lane of `<wrs2>`, with the result stored in `<wrd>`.
+    Each addition is modulo 2^32, meaning that overflow wraps around.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs1, wrs2]
+  encoding:
+    scheme: bnv
+    mapping:
+      wrd: wrd  # Destination register (5 bits to address 32 registers)
+      wrs1: wrs1 # First source register (5 bits to address 32 registers)
+      wrs2: wrs2  # Second source register (5 bits to address 32 registers)
+      funct3: b101  # Updated to differentiate from multiply
+      funct7: b1111111  # Could remain the same or change based on ISA design
+
+
 - mnemonic: bn.addc
   synopsis: Add with Carry
   operands: *bn-add-operands

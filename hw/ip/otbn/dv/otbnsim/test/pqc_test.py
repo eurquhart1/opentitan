@@ -101,15 +101,15 @@ def create_tests(dirpath):
         init_vals, init_asm_data = generate_otbn_data_section_16bit(r)
 
         # Create the input files
-        #for i in range(len(init_vals)):
-        tmpcopy = asm_template
-        # Write the input value into the template
-        tmpreplace = tmpcopy.replace("[r]", init_asm_data)
-        tmpreplace = tmpreplace.replace("[idx]", str(2))
-        # Create a new file for this input
-        new_asm_filepath = inputoutputpath + "/test_1" + ".s"
-        with open(new_asm_filepath, 'w') as newfile:
-            newfile.write(tmpreplace)
+        for i in range(256):
+            tmpcopy = asm_template
+            # Write the input value into the template
+            tmpreplace = tmpcopy.replace("[idx]", str(i))
+            tmpreplace = tmpreplace.replace("[r]", init_asm_data)
+            # Create a new file for this input
+            new_asm_filepath = inputoutputpath + "/test_" +str(i) + ".s"
+            with open(new_asm_filepath, 'w') as newfile:
+                newfile.write(tmpreplace)
 
         # Calculate the new values of t
         # Run the C code using ctypes
@@ -117,27 +117,28 @@ def create_tests(dirpath):
         lib = CDLL('/home/eu233/opentitan/hw/ip/otbn/dv/otbnsim/test/kyber_ntt.so')
 
         # Define the return type of the function
-        lib.ntt.restype = c_short
+        lib.ntt.restype = POINTER(c_short)
         lib.ntt.argtypes = [POINTER(c_short)]
         
         r_arr = (c_short * len(r))(*r)
 
         # Call the function (no arguments needed in this case)
-        t = lib.ntt(r_arr)
-        t = t & 0xFFFF      # treat value as unsigned
+        res = lib.ntt(r_arr)
+        #t = t & 0xFFFF      # treat value as unsigned
 
         #res_vals, res_asm_data = generate_otbn_data_section_16bit(c_r)
+        r_res = [res[i] for i in range(256)]
 
         # Create the output files
-        #for i in range(len(res_vals)):
-        tmpcopy = exp_template
+        for i in range(256):
+            tmpcopy = exp_template
 
-        tmpreplace = tmpcopy.replace("[t]", str(t))        # remember j gets updated an extra time in python
-            
-        # Create a new file for this output
-        new_exp_filepath = inputoutputpath + "/test_1" + ".exp"
-        with open(new_exp_filepath, 'w') as newfile:
-            newfile.write(tmpreplace)
+            tmpreplace = tmpcopy.replace("[rj]", str(r_res[i] & 0xFFFF))        # remember j gets updated an extra time in python
+                
+            # Create a new file for this output
+            new_exp_filepath = inputoutputpath + "/test_" + str(i) + ".exp"
+            with open(new_exp_filepath, 'w') as newfile:
+                newfile.write(tmpreplace)
 
     return find_tests("test_inner_loop0/inputoutput")
 

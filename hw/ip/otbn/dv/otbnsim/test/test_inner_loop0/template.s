@@ -208,12 +208,20 @@ body:
     srli       x8, x8, 1            /* len >>= 1 */
     bne        x8, x15, looplen
 
-    la         x1, r
-    addi       x12, x0, [idx]
-    srai       x13, x12, 1
+    /* Load r[j] into x19 */
+    la         x1, r              /* Load base address of r from memory */
+    addi       x11, x0, [idx]
+    srai       x13, x11, 1
     slli       x13, x13, 2        /* x13 : j*2 ... offset to element in r */
     add        x2, x1, x13        /* x1 : base address of r plus offset to element */
-    lw         x3, 0(x2)          /*  w21 should now contain 32-bit mask */
+    lw         x5, 0(x2)         /* load word 32 bits */
+    and        x18, x11, 1        /* j mod 2 */
+    xor        x17, x18, 1        /* inverse */
+    slli       x18, x18, 4        /* shift idx left by 4 */
+    slli       x17, x17, 4        /* shift idx inverse left by 4 */
+    srl        x19, x5, x18
+    sll        x19, x19, x17
+    srl        x19, x19, x17
 
 end:
     ecall

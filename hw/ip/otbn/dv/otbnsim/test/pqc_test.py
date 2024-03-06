@@ -2,6 +2,7 @@ from simple_test import find_tests, helper_test_count
 import os, py
 from typing import Any
 from pathlib import Path
+from ctypes import *
 
 QINV = 62209
 KYBER_Q = 3329
@@ -84,9 +85,7 @@ def to_twos_complement(value, bit_width=16):
     
     return twos_complement
 
-
-def create_tests(inputs, dirpath):
-
+def create_tests(dirpath):
     # Read in the input and output templates
     asm_template_path = dirpath +  "/template.s"
     exp_template_path = dirpath + "/template.exp"
@@ -96,59 +95,48 @@ def create_tests(inputs, dirpath):
     if not os.path.exists(inputoutputpath):
         os.makedirs(inputoutputpath)
 
-    # Write the new input files based on the template
     with open(asm_template_path, 'r') as asm_template, open(exp_template_path, 'r') as exp_template:
         asm_template = asm_template.read()
         exp_template = exp_template.read()
-        for i in range(len(inputs)):
+        init_vals, init_asm_data = generate_otbn_data_section_16bit(r)
+
+        # Create the input files
+        for i in range(256):
             tmpcopy = asm_template
             # Write the input value into the template
-            for j in range(2):
-                tmpreplace = tmpcopy.replace("[inp" + str(j+1) + "]", hex(inputs[i]))
-                tmpcopy = tmpreplace
+            tmpreplace = tmpcopy.replace("[idx]", str(i))
+            tmpreplace = tmpreplace.replace("[r]", init_asm_data)
             # Create a new file for this input
-            new_asm_filepath = inputoutputpath + "/test" + str(i+1) + ".s"
+            new_asm_filepath = inputoutputpath + "/test_" +str(i) + ".s"
             with open(new_asm_filepath, 'w') as newfile:
                 newfile.write(tmpreplace)
 
+        # Calculate the new values of t
+        # Run the C code using ctypes
+        # Load the shared library
+        lib = CDLL('/home/eu233/opentitan/hw/ip/otbn/dv/otbnsim/test/kyber_ntt.so')
+
+        # Define the return type of the function
+        lib.ntt.restype = POINTER(c_short)
+        lib.ntt.argtypes = [POINTER(c_short)]
+        
+        r_arr = (c_short * len(r))(*r)
+
+        # Call the function (no arguments needed in this case)
+        res = lib.ntt(r_arr)
+        #t = t & 0xFFFF      # treat value as unsigned
+
+        #res_vals, res_asm_data = generate_otbn_data_section_16bit(c_r)
+        r_res = [res[i] for i in range(256)]
+
+        # Create the output files
+        for i in range(256):
             tmpcopy = exp_template
 
-            inp1 = r[inputs[i]]
-            inp2 = zetas[1]     # fixing zeta value for now, only modelling inner loop
-            if inp1 < 0 :
-                inp1 = to_twos_complement(inp1)
-            if inp2 < 0 :
-                inp2 = to_twos_complement(inp2)
-            a = inp1 * inp2
-            out2 = a & 65535
-            t = (a - (out2 * QINV * KYBER_Q)) >> 16
-
-            # Adjust for two's complement to interpret as a signed 16-bit integer
-            if t >= 0x8000:  # If the most significant bit is set, indicating a negative number
-                t = t - 0x10000
-
-            t = t & 0xFFFF  # Truncate to 16 bits
-            sub = 0
-            mod = inputs[i] % 2
-            if mod == 0:
-                extra_el = r[inputs[i] + 1]
-                opp = extra_el << 16
-                result_hex = ((extra_el & 0xFFFF) << 16) ^ ((r[inputs[i]] + t) & 0XFFFF)
-            else:
-                print("else")
-                extra_el = r[inputs[i] - 1]
-                opp = extra_el & 0xFFFF
-                sub = r[inputs[i]] + t
-                sub = sub & 0xFFFF
-                result_hex = (sub << 16) ^ (opp)
-
-            s = ((r[inputs[i]] + t) & 0XFFFF)<<((inputs[i]%2)*16 )
-
-            tmpreplace = tmpcopy.replace("[out2]", str(result_hex))
-            tmpreplace = tmpreplace.replace("[sub]", str(s))
-            
-            # Create a new file for this input
-            new_exp_filepath = inputoutputpath + "/test" + str(i+1) + ".exp"
+            tmpreplace = tmpcopy.replace("[rj]", str(r_res[i] & 0xFFFF))        # remember j gets updated an extra time in python
+                
+            # Create a new file for this output
+            new_exp_filepath = inputoutputpath + "/test_" + str(i) + ".exp"
             with open(new_exp_filepath, 'w') as newfile:
                 newfile.write(tmpreplace)
 
@@ -158,38 +146,45 @@ def create_tests(inputs, dirpath):
 def pytest_generate_tests(metafunc: Any) -> None:
     if metafunc.function is test_fn:
         tests = list()
-        testaddbn_flag = os.environ.get('BN')
-        testmontmul_flag = os.environ.get('MM')
-        testfqmul_flag = os.environ.get('FQ')
-        testloop0_flag = os.environ.get('L0')
         
-        if testaddbn_flag is not None:
-            # Define the input list
-            pairs = [(x, y) for x in range(5) for y in range(5)]
-
-            # Create all of the input/output files in the /testadd directory
-            tests += create_tests(pairs, "test/testaddbn")
-
-        if testmontmul_flag is not None:
-            # Define the input list
-            pairs = [x for x in range(1, 2147483647, 10000000)]
-
-            # Create all of the input/output files in the /testadd directory
-            tests += create_tests(pairs, "test/test_montmul")
-
-        if testfqmul_flag is not None:
-            # Define the input list
-            pairs = [(x, y) for x in range(1, 2147483647, 100000000) for y in range(1, 2147483647, 100000000)]
-
-            # Create all of the input/output files in the /testadd directory
-            tests += create_tests(pairs, "test/test_fqmul")
-
-        if testloop0_flag is not None:
-            # Define the input list
-            pairs = [x for x in range(0,256, 2)]
-
-            # Create all of the input/output files in the /testadd directory
-            tests += create_tests(pairs, "test/test_inner_loop0")
+        # Create all of the input/output files in the /testadd directory
+        tests += create_tests("test/test_inner_loop0")
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)
+
+def generate_otbn_data_section_16bit(values):
+    """
+    Generates the .data section for OTBN assembly where each 16-bit value
+    is stored contiguously in memory, ensuring that the array's elements
+    are in order of increasing significance in memory locations. Each pair
+    of 16-bit values is combined into a 32-bit word, with padding added if necessary
+    to accommodate an odd number of 16-bit values.
+    """
+    # Initialize the assembly code string
+    assembly_code = ".data\n"
+    vals = []
+
+    # Ensure the number of values is even by padding with a zero if necessary
+    if len(values) % 2 != 0:
+        values.append(0)
+
+    # Process each pair of 16-bit values
+    for i in range(0, len(values), 2):
+        # Convert to two's complement if negative, then ensure it's confined to 16 bits
+        val1 = values[i] & 0xFFFF
+        val2 = values[i+1] & 0xFFFF
+
+        if values[i] < 0:
+            val1 = ((~(-values[i]) + 1) & 0xFFFF)
+        if values[i+1] < 0:
+            val2 = ((~(-values[i+1]) + 1) & 0xFFFF)
+
+        # Combine the two 16-bit values into a single 32-bit value
+        combined_val = val1 | (val2 << 16)
+        vals.append(hex(combined_val))
+        
+        # Append the assembly directive with the combined value
+        assembly_code += f"    .word 0x{combined_val:08x}\n"
+        
+    return vals, assembly_code

@@ -216,21 +216,21 @@ def otbn_sim_test(args_list):
                     actual_value_unsigned = actual_value
 
                 # Truncate both expected and actual values to the lowest 32 bits. this is just to eliminate all of the 1s introduced by 2s complement right shift in python
-                expected_value_truncated = expected_value_unsigned & 0xFFFFFFFF
-                actual_value_truncated = actual_value_unsigned & 0xFFFFFFFF
+                expected_value_truncated = expected_value_unsigned
+                actual_value_truncated = actual_value_unsigned
             
                 if reg.startswith('w'):
                     # Now compare the truncated values
                     if actual_value_truncated != expected_value_truncated:
-                        expected_str = f'{expected_value_truncated:#0258b}'  # Updated for 16 bits + '0b' prefix
-                        actual_str = f'{actual_value_truncated:#0258b}'     # Updated for 16 bits + '0b' prefix
+                        expected_str = f'{expected_value_truncated:#8x}'  # Updated for 16 bits + '0b' prefix
+                        actual_str = f'{actual_value_truncated:#8x}'     # Updated for 16 bits + '0b' prefix
                         result.err(f'Mismatch for register {reg}:\n'
                                     f'  Expected: {expected_str}\n'
                                     f'  Actual:   {actual_str}')
                 else:
                     if actual_value_truncated != expected_value_truncated:
-                        expected_str = f'{expected_value_truncated:#010b}'  # Updated for 16 bits + '0b' prefix
-                        actual_str = f'{actual_value_truncated:#010b}'     # Updated for 16 bits + '0b' prefix
+                        expected_str = f'{expected_value_truncated:#8x}'  # Updated for 16 bits + '0b' prefix
+                        actual_str = f'{actual_value_truncated:#8x}'     # Updated for 16 bits + '0b' prefix
                         result.err(f'Mismatch for register {reg}:\n'
                                     f'  Expected: {expected_str}\n'
                                     f'  Actual:   {actual_str}')

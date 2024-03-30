@@ -166,6 +166,23 @@ wdr3:
     wrs2: 24-20
     wrs1: 19-15
 
+# A partial scheme for instructions that take one source WDR, an imm and produce a
+# dest WDR (vectorized shift)
+wdr4:
+  parents:
+    - wrd
+  fields:
+    wrs: 24-20
+    imm: 19-14
+
+# A partial scheme for BN broadcast. Takes one source WDR, one source GPR and produces a
+# dest WDR (vectorized shift)
+wdr5:
+  parents:
+    - wrd
+  fields:
+    grs: 24-20
+
 # A partial scheme that defines the 'fg' field (for <flag_group> operands)
 fg:
   fields:
@@ -283,7 +300,7 @@ bnaq:
     shift: 14-13
     z: 12
 
-# Scheme for vector extensions
+# Scheme for BN vector extensions (add, mul, sub)
 bnv:
   parents:
     - custom4
@@ -291,6 +308,27 @@ bnv:
     - funct3
   fields:
     funct7: 31-25
+
+# Scheme for BN shift vector extensions
+bnvs:
+  parents:
+    - custom4
+    - wdr4
+    - funct2
+  fields:
+    funct7: 31-25
+
+# Scheme for BN broadcast
+bnb:
+  parents:
+    - custom4
+    - wdr5
+    - funct3
+  fields:
+    funct7: 31-25
+    fixed:
+      bits: 19-15
+      value: bxxxxx
 
 # Unusual scheme used for bn.rshi (the immediate bleeds into the usual funct3
 # field)

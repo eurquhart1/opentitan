@@ -138,6 +138,149 @@
       funct7: b1111111  # Could remain the same or change based on ISA design
 
 
+- mnemonic: bn.subvec
+  synopsis: Vectorized Subtract
+  operands:
+    - &subvec-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &subvec-wrs1
+      name: wrs1
+      doc: First source WDR.
+    - &subvec-wrs2
+      name: wrs2
+      doc: Second source WDR.
+  syntax: |
+    <wrd>, <wrs1>, <wrs2>
+  doc: |
+    Performs a vectorized subtraction operation across each 32-bit lane of the 256-bit registers.
+    Each lane of `<wrs2>` is subtracted from the corresponding lane of `<wrs1>`, with the result stored in `<wrd>`.
+    Each addition is modulo 2^32, meaning that overflow wraps around.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs1, wrs2]
+  encoding:
+    scheme: bnv
+    mapping:
+      wrd: wrd  # Destination register (5 bits to address 32 registers)
+      wrs1: wrs1 # First source register (5 bits to address 32 registers)
+      wrs2: wrs2  # Second source register (5 bits to address 32 registers)
+      funct3: b110  # Updated to differentiate from add & multiply
+      funct7: b1111111  # Could remain the same or change based on ISA design
+
+
+- mnemonic: bn.andvec
+  synopsis: Vectorized AND
+  operands:
+    - &andvec-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &andvec-wrs1
+      name: wrs1
+      doc: First source WDR.
+    - &andvec-wrs2
+      name: wrs2
+      doc: Second source WDR.
+  syntax: |
+    <wrd>, <wrs1>, <wrs2>
+  doc: |
+    Performs a vectorized bitwise AND operation across each 32-bit lane of the 256-bit registers.
+    Each lane of `<wrs1>` is ANDed with the corresponding lane of `<wrs2>`, with the result stored in `<wrd>`.
+    This operation is non-wrapping as it directly reflects the bitwise AND result.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs1, wrs2]
+  encoding:
+    scheme: bnv
+    mapping:
+      wrd: wrd  # Destination register (5 bits to address 32 registers)
+      wrs1: wrs1 # First source register (5 bits to address 32 registers)
+      wrs2: wrs2  # Second source register (5 bits to address 32 registers)
+      funct3: b110  # Updated to differentiate from add and multiply
+      funct7: b1111101  # Could remain the same or change based on ISA design
+
+
+- mnemonic: bn.rshiftvec
+  synopsis: Vectorized Right Shift
+  operands:
+    - &rshiftvec-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &rshiftvec-wrs
+      name: wrs
+      doc: Source WDR.
+    - &rshiftvec-imm
+      name: imm
+      doc: Immediate value specifying the number of bits to shift right.
+  syntax: <wrd>, <wrs>, <imm>
+  doc: Performs a vectorized logical right shift operation across each 32-bit lane of the 256-bit register `<wrs>`. Each lane is shifted right by the number of bits specified in `<imm>`, with zeros shifted into the vacated bit positions. The result is stored in `<wrd>`.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs]
+  encoding:
+    scheme: bnvs
+    mapping:
+      wrd: wrd # Destination register (5 bits to address 32 registers)
+      wrs: wrs # Source register (5 bits to address 32 registers)
+      imm: imm # Immediate value for shift amount (needs specific encoding)
+      funct2: b10
+      funct7: b1111110 # Could remain the same or change based on ISA design
+
+- mnemonic: bn.lshiftvec
+  synopsis: Vectorized Left Shift
+  operands:
+    - &lshiftvec-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &lshiftvec-wrs
+      name: wrs
+      doc: Source WDR.
+    - &lshiftvec-imm
+      name: imm
+      doc: Immediate value specifying the number of bits to shift left.
+  syntax: <wrd>, <wrs>, <imm>
+  doc: Performs a vectorized logical left shift operation across each 32-bit lane of the 256-bit register `<wrs>`. Each lane is shifted left by the number of bits specified in `<imm>`, with zeros shifted into the vacated bit positions. The result is stored in `<wrd>`.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs]
+  encoding:
+    scheme: bnvs
+    mapping:
+      wrd: wrd # Destination register (5 bits to address 32 registers)
+      wrs: wrs # Source register (5 bits to address 32 registers)
+      imm: imm # Immediate value for shift amount (needs specific encoding)
+      funct2: b10
+      funct7: b1111100 # Could remain the same or change based on ISA design
+
+- mnemonic: bn.broadcast
+  synopsis: Vectorized Broadcast
+  operands:
+    - &broadcast-wrd
+      name: wrd
+      doc: Destination WDR.
+    - &broadcast-grs
+      name: grs
+      doc: Source GPR (General Purpose Register) containing the 32-bit value to be broadcast.
+  syntax: |
+    <wrd>, <grs>
+  doc: |
+    Broadcasts the 32-bit value from the specified GRP (`<grs>`) across each of the 8 32-bit lanes of the destination 256-bit Wide Data Register (`<wrd>`). The same 32-bit value from `<grs>` is replicated in each lane of `<wrd>`.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [grs]
+  encoding:
+    scheme: bnb
+    mapping:
+      wrd: wrd  # Destination register
+      grs: grs  # Source General Purpose Registe
+      funct3: b110
+      funct7: b1111011
+
 - mnemonic: bn.addc
   synopsis: Add with Carry
   operands: *bn-add-operands

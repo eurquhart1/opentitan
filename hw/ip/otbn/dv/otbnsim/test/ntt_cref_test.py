@@ -140,7 +140,7 @@ def create_tests(dirpath):
             with open(new_exp_filepath, 'w') as newfile:
                 newfile.write(tmpreplace)
 
-    return find_tests("test_inner_loop0/inputoutput")
+    return find_tests("ntt_cref_test/inputoutput")
 
 
 def pytest_generate_tests(metafunc: Any) -> None:
@@ -148,7 +148,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
         tests = list()
         
         # Create all of the input/output files in the /testadd directory
-        tests += create_tests("test/test_inner_loop0")
+        tests += create_tests("test/ntt_cref_test")
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)

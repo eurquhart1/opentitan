@@ -88,7 +88,6 @@ def find_tests(dir) -> List[Tuple[str, str]]:
                                    .format(dirname, exp_file, basename))
 
         assert len(exp_files) == len(asm_files)
-
     return ret
 
 
@@ -174,7 +173,7 @@ def otbn_sim_test(args_list):
     expected_regs = parse_reg_dump(args.expected.read())
 
     # Run the simulation and produce a register dump.
-    cmd = [args.simulator, '--dump-regs', '-', args.elf]
+    cmd = [args.simulator, '--dump-regs', '-', '--dump-dmem', 'memdump.txt', args.elf]
     sim_proc = subprocess.run(cmd, check=True,
                               stdout=subprocess.PIPE, universal_newlines=True)
     actual_regs = parse_reg_dump(sim_proc.stdout)

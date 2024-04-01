@@ -318,6 +318,17 @@ bnvs:
   fields:
     funct7: 31-25
 
+# Scheme for BN.LSHI (since bnr encoding of BN.RSHI is full)
+# Scheme for BN vector extensions (add, mul, sub)
+bnlshi:
+  parents:
+    - custom4
+    - wdr3
+    - funct3
+  fields:
+    imm: 31-27
+    funct2: 26-25
+
 # Scheme for BN broadcast
 bnb:
   parents:

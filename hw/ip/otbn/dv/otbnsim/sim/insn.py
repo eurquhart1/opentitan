@@ -1202,6 +1202,24 @@ class BNRSHI(OTBNInsn):
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
 
 
+class BNLSHI(OTBNInsn):
+    insn = insn_for_mnemonic('bn.lshi', 4)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs1 = op_vals['wrs1']
+        self.wrs2 = op_vals['wrs2']
+        self.imm = op_vals['imm']
+
+    def execute(self, state: OTBNState) -> None:
+        a = state.wdrs.get_reg(self.wrs1).read_unsigned()
+        b = state.wdrs.get_reg(self.wrs2).read_unsigned()
+
+        result = (b << self.imm) & ((1 << 256) - 1)
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+
 class BNSEL(OTBNInsn):
     insn = insn_for_mnemonic('bn.sel', 5)
 
@@ -1523,7 +1541,7 @@ INSN_CLASSES = [
     BNMULQACC, BNMULQACCWO, BNMULQACCSO,
     BNSUB, BNSUBB, BNSUBI, BNSUBM,
     BNAND, BNOR, BNNOT, BNXOR,
-    BNRSHI,
+    BNRSHI, BNLSHI,
     BNSEL,
     BNCMP, BNCMPB,
     BNLID, BNSID,

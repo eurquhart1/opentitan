@@ -798,6 +798,35 @@
       funct2: b11
       wrd: wrd
 
+- mnemonic: bn.lshi
+  synopsis: Concatenate and left shift immediate
+  operands:
+    - name: wrd
+      doc: Name of the destination WDR
+    - name: wrs1
+      doc: Name of the first source WDR
+    - name: wrs2
+      doc: Name of the second source WDR
+    - name: imm
+      type: uimm
+      doc: |
+        Number of bits to shift the second source register by. Valid range: 0..(WLEN-1).
+  syntax: |
+    <wrd>, <wrs1>, <wrs2> >> <imm>
+  doc: |
+    Concatenates the content of WDRs referenced by `wrs1` and `wrs2` (`wrs1` forms the upper part), shifts it left by an immediate value and truncates to WLEN bit.
+    The result is stored in the WDR referenced by `wrd`.
+  errs: []
+  encoding:
+    scheme: bnlshi
+    mapping:
+      wrd: wrd # Destination register (5 bits to address 32 registers)
+      wrs1: wrs1 # Source register (5 bits to address 32 registers)
+      wrs2: wrs2
+      funct3: b111
+      imm: imm # Immediate value for shift amount (needs specific encoding)
+      funct2: b11 # Could remain the same or change based on ISA design
+
 - mnemonic: bn.sel
   synopsis: Flag Select
   operands:

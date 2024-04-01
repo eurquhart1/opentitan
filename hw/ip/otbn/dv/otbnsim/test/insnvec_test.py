@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import random
 import copy
+import secrets
 
 def test_fn(tmpdir: py.path.local,
                asm_file: str,
@@ -89,6 +90,16 @@ def shift_array_elements_left(arr, shift_amount):
     # Perform the left shift operation
     # Masking with 0xFFFFFFFF ensures that the result fits within 32 bits, handling overflow
     result = [((a << shift_amount) & 0xFFFFFFFF) for a in arr]
+    return result
+
+
+def shift_reg_left(register_value, shift_amount):
+    """Shift the contents of a WDR to the left by a specified number of bits."""
+    if not (0 <= shift_amount <= 255):
+        raise ValueError("Shift amount must be between 0 and 255.")
+
+    result = (register_value << shift_amount) & ((1 << 256) - 1)
+
     return result
 
 
@@ -293,10 +304,10 @@ def create_tests_bnvecrshift(dirpath, inputs):
         # Create the input files
         for i, input in enumerate(inputs):
             arr = input[0]
-            shift_amount = input[1]  # Assuming second element of input tuple is the shift amount
+            shift_amount = input[1]
 
             result = shift_array_elements_right(arr, shift_amount)
-            out = array_to_hex_le(result)  # Assuming this function exists to convert array to hex string in little-endian format
+            out = array_to_hex_le(result)  
 
             # Prepare the assembly and expected output templates with actual values
             asm_replaced = asm_template_content.replace("[inp1]", generate_otbn_data_section_32bit(arr))
@@ -313,7 +324,6 @@ def create_tests_bnvecrshift(dirpath, inputs):
             with open(new_exp_filepath, 'w') as newfile:
                 newfile.write(exp_replaced)
 
-    # Assuming find_tests is a function that searches for test files and returns a list of their paths
     return find_tests(os.path.join("test_bnrshiftvec", "inputoutput"))
 
 
@@ -334,10 +344,10 @@ def create_tests_bnveclshift(dirpath, inputs):
         # Create the input files
         for i, input in enumerate(inputs):
             arr = input[0]
-            shift_amount = input[1]  # Assuming second element of input tuple is the shift amount
+            shift_amount = input[1]
 
             result = shift_array_elements_left(arr, shift_amount)
-            out = array_to_hex_le(result)  # Assuming this function exists to convert array to hex string in little-endian format
+            out = array_to_hex_le(result)
 
             # Prepare the assembly and expected output templates with actual values
             asm_replaced = asm_template_content.replace("[inp1]", generate_otbn_data_section_32bit(arr))
@@ -354,8 +364,52 @@ def create_tests_bnveclshift(dirpath, inputs):
             with open(new_exp_filepath, 'w') as newfile:
                 newfile.write(exp_replaced)
 
-    # Assuming find_tests is a function that searches for test files and returns a list of their paths
     return find_tests(os.path.join("test_bnlshiftvec", "inputoutput"))
+
+
+def register_value_to_hex(value):
+    """
+    Convert a 256-bit register value to a hex string.
+    """
+    return format(value & (2**256 - 1), '064x')
+
+
+def create_tests_reg_lshift(dirpath, inputs):
+    # Read in the input and output templates
+    asm_template_path = os.path.join(dirpath, "template.s")
+    exp_template_path = os.path.join(dirpath, "template.exp")
+
+    # Create an /inputoutput directory if it does not already exist
+    inputoutputpath = os.path.join(dirpath, 'inputoutput')
+    if not os.path.exists(inputoutputpath):
+        os.makedirs(inputoutputpath)
+
+    with open(asm_template_path, 'r') as asm_template, open(exp_template_path, 'r') as exp_template:
+        asm_template_content = asm_template.read()
+        exp_template_content = exp_template.read()
+
+        for i, (register_value, shift_amount) in enumerate(inputs):
+            # Shift the register contents
+            result = shift_reg_left(register_value, shift_amount)
+
+            out_hex = register_value_to_hex(result)
+
+            # Prepare the assembly and expected output templates with actual values
+            asm_replaced = asm_template_content.replace("[inp1]", generate_otbn_data_section_64bit(register_value))
+            asm_replaced = asm_replaced.replace("[inp2]", str(shift_amount))
+
+            new_asm_filepath = os.path.join(inputoutputpath, f"test{i}.s")
+            with open(new_asm_filepath, 'w') as newfile:
+                newfile.write(asm_replaced)
+
+            exp_replaced = exp_template_content.replace("[out]", "0x" + out_hex)
+            exp_replaced = exp_replaced.replace("[inp]", "0x" + register_value_to_hex(register_value))
+
+            new_exp_filepath = os.path.join(inputoutputpath, f"test{i}.exp")
+            with open(new_exp_filepath, 'w') as newfile:
+                newfile.write(exp_replaced)
+
+    return find_tests(os.path.join("test_reg_lshift", "inputoutput"))
 
 
 def create_tests_bnvecbroadcast(dirpath, inputs):
@@ -397,6 +451,13 @@ def create_tests_bnvecbroadcast(dirpath, inputs):
     return find_tests(os.path.join("test_bnvecbroadcast", "inputoutput"))
 
 
+def generate_random_256bit_number():
+    # 256 bits is 32 bytes. secrets.token_bytes generates a random byte string.
+    # int.from_bytes converts a byte string into an integer.
+    random_number = int.from_bytes(secrets.token_bytes(32), 'big')
+    return random_number
+
+
 def pytest_generate_tests(metafunc: Any) -> None:
     if metafunc.function is test_fn:
         tests = list()
@@ -408,6 +469,8 @@ def pytest_generate_tests(metafunc: Any) -> None:
         and_inps = []   # needs to be a list of 32-bit pairs
 
         broadcast_inps = []  # List of single 32-bit values for broadcast
+
+        shift_reg_left_inputs = []
         
         for i in range(100):
             el1, el2 = generate_random_int16_arrays()
@@ -415,6 +478,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
             shift_inps.append([generate_random_int32_array(), random.randint(0, 17)])
             and_inps.append([generate_random_int32_array(), generate_random_int32_array()])
             broadcast_inps.append(random.randint(0, 0xFFFF))
+            shift_reg_left_inputs.append([generate_random_256bit_number(), random.randint(1, 31)])
         
         # Create all of the input/output files in the /testadd directory
         #tests += create_tests_bnvecmul("test/test_bnvecmul", input_pairs)
@@ -423,7 +487,8 @@ def pytest_generate_tests(metafunc: Any) -> None:
         #tests += create_tests_bnvecrshift("test/test_bnrshiftvec", shift_inps)
         # tests += create_tests_bnveclshift("test/test_bnlshiftvec", shift_inps)
         #tests += create_tests_bnvecand("test/test_bnvecand", and_inps)
-        tests += create_tests_bnvecbroadcast("test/test_bnvecbroadcast", broadcast_inps)
+        #tests += create_tests_bnvecbroadcast("test/test_bnvecbroadcast", broadcast_inps)
+        tests += create_tests_reg_lshift("test/test_reg_lshift", shift_reg_left_inputs)
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)
@@ -458,5 +523,30 @@ def generate_otbn_data_section_32bit(values):
         # Since each value is stored in a 32-bit word, no need to combine. The upper 16 bits will be zeros.
         # Append the assembly directive with the value
         assembly_code += f"    .word 0x{val:08x}\n"
+        
+    return assembly_code
+
+def generate_otbn_data_section_64bit(value_256bit):
+    """
+    Generates the .data section for OTBN assembly from a single 256-bit value,
+    storing it as four 64-bit double words (dwords) in memory. The 256-bit value
+    is split into four 64-bit chunks, with each chunk stored in increasing order
+    of significance in memory locations.
+    
+    Args:
+    value_256bit (int): A 256-bit integer to be stored in the .data section.
+
+    Returns:
+    str: The assembly code representing the .data section with the 256-bit value.
+    """
+    # Initialize the assembly code string
+    assembly_code = ".data\n"
+
+    # Split the 256-bit value into four 64-bit (dword) chunks
+    for i in range(4):
+        # Extract 64-bit chunk by shifting and masking
+        chunk = (value_256bit >> (64 * i)) & 0xFFFFFFFFFFFFFFFF
+        # Append the assembly directive with the chunk
+        assembly_code += f"    .dword 0x{chunk:016x}\n"
         
     return assembly_code

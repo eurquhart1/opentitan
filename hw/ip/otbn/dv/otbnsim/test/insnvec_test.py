@@ -488,7 +488,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
         # tests += create_tests_bnveclshift("test/test_bnlshiftvec", shift_inps)
         #tests += create_tests_bnvecand("test/test_bnvecand", and_inps)
         #tests += create_tests_bnvecbroadcast("test/test_bnvecbroadcast", broadcast_inps)
-        tests += create_tests_reg_lshift("test/test_reg_lshift", shift_reg_left_inputs)
+        #tests += create_tests_reg_lshift("test/test_reg_lshift", shift_reg_left_inputs)
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)

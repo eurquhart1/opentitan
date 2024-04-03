@@ -642,8 +642,8 @@ class BNADDVEC(OTBNInsn):
         # Iterate over each 32-bit lane
         for lane_idx in range(8):
             # Extract the 32-bit elements (lanes) from each source
-            src1_lane = (src1 >> (lane_idx * 32)) & 0xFFFFFFFF  # Ensure full 32-bit lane is used
-            src2_lane = (src2 >> (lane_idx * 32)) & 0xFFFFFFFF  # Ensure full 32-bit lane is used
+            src1_lane = (src1 >> (lane_idx * 32)) & 0xFFFF  # Ensure full 32-bit lane is used
+            src2_lane = (src2 >> (lane_idx * 32)) & 0xFFFF  # Ensure full 32-bit lane is used
 
             # Perform the addition operation on the 32-bit elements
             add_res = (src1_lane + src2_lane) & 0xFFFFFFFF  # Modulo 2^32 to handle overflow

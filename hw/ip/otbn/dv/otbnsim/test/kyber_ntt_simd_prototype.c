@@ -125,9 +125,15 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
         t = _mm256_xor_epi32(tl, tu);
         
         /*rjlennew = _mm256_sub_epi16(rj16vec, t);
-        _mm256_storeu_si256((__m256i*)&arr_simd[j + len], rjlennew);
-        rjnew = _mm256_add_epi16(rj16vec, t);*/
-        _mm256_storeu_si256((__m256i*)&arr_simd[j], t);
+        _mm256_storeu_si256((__m256i*)&arr_simd[j + len], rjlennew);*/
+        printf("rj16vec:\n");
+        print_m256i_epi16(rj16vec);
+        printf("t:\n");
+        print_m256i_epi16(t);
+        rjnew = _mm256_add_epi16(rj16vec, t);
+        printf("rjnew:\n");
+        print_m256i_epi16(rjnew);
+        _mm256_storeu_si256((__m256i*)&arr_simd[j], rjnew);
         for (int i = 0; i < 16; i++) {
           printf("%d ", arr_simd[i]);
       }

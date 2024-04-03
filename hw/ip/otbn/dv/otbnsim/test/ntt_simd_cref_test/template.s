@@ -51,7 +51,7 @@
 
     BN.SUBVEC       w20, w9, w29
     BN.RSHIFTVEC    w20, w20, 16
-    BN.ADDVEC       w21, w20, w7
+    BN.SUBVEC       w21, w7, w20
     BN.AND          w21, w21, w3
 
     BN.MULVEC       w10, w4, w8
@@ -60,7 +60,7 @@
 
     BN.SUBVEC       w10, w10, w14
     BN.RSHIFTVEC    w10, w10, 16
-    BN.ADDVEC       w22, w10, w8
+    BN.SUBVEC       w22, w8, w10
     BN.LSHIFTVEC    w11, w22, 16
     BN.XOR          w12, w11, w21
 

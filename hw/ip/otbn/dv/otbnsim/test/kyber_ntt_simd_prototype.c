@@ -130,7 +130,7 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
         print_m256i_epi16(rj16vec);
         printf("t:\n");
         print_m256i_epi16(t);
-        rjnew = _mm256_add_epi16(rj16vec, t);
+        rjnew = _mm256_sub_epi16(rj16vec, t);
         printf("rjnew:\n");
         print_m256i_epi16(rjnew);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], rjnew);

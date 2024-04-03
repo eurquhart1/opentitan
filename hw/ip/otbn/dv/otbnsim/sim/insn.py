@@ -583,7 +583,6 @@ class BNMULVEC(OTBNInsn):
 
     def __init__(self, raw: int, op_vals: Dict[str, int]):
         super().__init__(raw, op_vals)
-        # Assuming the instruction format includes destination and two source registers
         self.wrd = op_vals['wrd']
         self.wrs1 = op_vals['wrs1']
         self.wrs2 = op_vals['wrs2']
@@ -596,14 +595,24 @@ class BNMULVEC(OTBNInsn):
         # Prepare the result variable
         result = 0
 
+        # Function to convert 16-bit unsigned to signed
+        def to_signed_16(value):
+            if value & 0x8000:  # Check if the sign bit is set
+                return -((~value & 0xFFFF) + 1)
+            return value
+
         # Iterate over each 32-bit lane
         for lane_idx in range(8):
-            # Extract the 32-bit elements (lanes) from each source
+            # Extract the 16-bit elements (lanes) from each source
             src1_lane = (src1 >> (lane_idx * 32)) & 0xFFFF
             src2_lane = (src2 >> (lane_idx * 32)) & 0xFFFF
 
-            # Perform the multiply operation on the 32-bit elements
-            mul_res = (src1_lane * src2_lane) & 0xFFFFFFFF
+            # Convert 16-bit unsigned to signed
+            src1_lane_signed = to_signed_16(src1_lane)
+            src2_lane_signed = to_signed_16(src2_lane)
+
+            # Perform the multiply operation on the 16-bit elements, with result that should fit within 32 bits
+            mul_res = (src1_lane_signed * src2_lane_signed) & 0xFFFFFFFF
 
             # Place the result in the corresponding lane of the result variable
             result |= mul_res << (lane_idx * 32)

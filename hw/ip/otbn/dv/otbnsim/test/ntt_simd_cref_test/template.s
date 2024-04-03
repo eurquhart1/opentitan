@@ -43,23 +43,23 @@
     BN.LID     x3, 0(x1)         /* r[j] elements are in w5 */
     BN.LSHIFTVEC    w7, w5, 16
     BN.RSHIFTVEC    w7, w7, 16   /* w7: rjlenlow16vec */
-    BN.XOR          w7, w7, w13
     BN.RSHIFTVEC    w8, w5, 16   /* w8: rjlenupp16vec */
 
     BN.MULVEC       w9, w4, w7   /* fqmul arg: a = a*b */
     BN.MULVEC       w19, w9, w2     /* t = a*QINV */
-    BN.MULVEC       w19, w19, w1    /* t = t*KYBER_Q */
+    BN.MULVEC       w29, w19, w1    /* t = t*KYBER_Q */
 
-    BN.SUBVEC       w20, w9, w19
-    BN.AND          w20, w20, w3
+    BN.SUBVEC       w20, w9, w29
+    BN.RSHIFTVEC    w21, w20, 16
 
     BN.MULVEC       w10, w4, w8
     BN.MULVEC       w14, w10, w2
     BN.MULVEC       w14, w14, w1
 
     BN.SUBVEC       w10, w10, w14
+    BN.RSHIFTVEC    w10, w10, 16
     BN.LSHIFTVEC    w11, w10, 16
-    BN.XOR          w12, w11, w20
+    BN.XOR          w12, w11, w21
 
     la         x1, r
     addi       x3, x0, 12

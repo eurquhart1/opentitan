@@ -76,7 +76,7 @@ __m256i montgomery_reduce_simd(__m256i a)
   t = _mm256_srai_epi32(t, 16);
   t = _mm256_mullo_epi32(t, kyberq32vec);
   t = _mm256_sub_epi32(a, t);
-  //t = _mm256_srai_epi32(t, 16); // Shift right arithmetic by 16 bits*/
+  t = _mm256_srai_epi32(t, 16); // Shift right arithmetic by 16 bits*/
 
   return t;
 }

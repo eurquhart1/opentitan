@@ -18,7 +18,7 @@
     BN.LID     x3, 0(x1)         /* w3 has mask with the low 16 bits of each 32-bit word set only. correct */
 
     addi       x4, x0, 1         /* x4 : k */
-    addi       x5, x0, 128       /* x5 : len */
+    addi       x5, x0, 256       /* x5 : len */
     addi       x6, x0, 0         /* x6 : start */
 
     /* load zeta and broadcast */
@@ -39,8 +39,15 @@
 
     /* Load r[j + len] */
     la         x1, r
+    add        x1, x1, x5
     addi       x3, x0, 5
-    BN.LID     x3, 0(x1)         /* r[j] elements are in w5 */
+    BN.LID     x3, 0(x1)         /* r[j + len] elements are in w5 */
+
+    /* Load r[j] */
+    la         x1, r
+    addi       x3, x0, 6
+    BN.LID     x3, 0(x1)         /* r[j] elements are in w6 */
+
     BN.LSHIFTVEC    w7, w5, 16
     BN.RSHIFTVEC    w7, w7, 16   /* w7: rjlenlow16vec */
     BN.RSHIFTVEC    w8, w5, 16   /* w8: rjlenupp16vec */
@@ -61,8 +68,18 @@
     BN.LSHIFTVEC    w11, w10, 16
     BN.XOR          w12, w11, w21
 
+    BN.SUBVEC       w13, w6, w12
+    BN.ADDVEC       w22, w6, w12
+
+    /* r[j + len] = r[j] - t */
     la         x1, r
-    addi       x3, x0, 12
+    add        x1, x1, x5
+    addi       x3, x0, 13
+    BN.SID     x3, 0(x1)
+
+    /* r[j] = r[j] + t */
+    la         x1, r
+    addi       x3, x0, 22
     BN.SID     x3, 0(x1)
 
     /* Load r[j] into x19 */

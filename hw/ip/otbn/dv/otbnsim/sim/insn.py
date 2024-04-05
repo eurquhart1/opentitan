@@ -626,7 +626,6 @@ class BNADDVEC(OTBNInsn):
 
     def __init__(self, raw: int, op_vals: Dict[str, int]):
         super().__init__(raw, op_vals)
-        # Assuming the instruction format includes destination and two source registers
         self.wrd = op_vals['wrd']
         self.wrs1 = op_vals['wrs1']
         self.wrs2 = op_vals['wrs2']
@@ -639,17 +638,17 @@ class BNADDVEC(OTBNInsn):
         # Prepare the result variable
         result = 0
 
-        # Iterate over each 32-bit lane
-        for lane_idx in range(8):
-            # Extract the 32-bit elements (lanes) from each source
-            src1_lane = (src1 >> (lane_idx * 32)) & 0xFFFFFFFF  # Ensure full 32-bit lane is used
-            src2_lane = (src2 >> (lane_idx * 32)) & 0xFFFFFFFF  # Ensure full 32-bit lane is used
+        # Iterate over each 16-bit lane
+        for lane_idx in range(16):
+            # Extract the 16-bit values from the current lane
+            src1_lane = (src1 >> (lane_idx * 16)) & 0xFFFF
+            src2_lane = (src2 >> (lane_idx * 16)) & 0xFFFF
 
-            # Perform the addition operation on the 32-bit elements
-            add_res = (src1_lane + src2_lane) & 0xFFFFFFFF  # Modulo 2^32 to handle overflow
+            # Perform the addition operation on the 16-bit elements
+            add_res = (src1_lane + src2_lane) & 0xFFFF  # Modulo 2^16 to handle overflow
 
             # Place the result in the corresponding lane of the result variable
-            result |= add_res << (lane_idx * 32)
+            result |= add_res << (lane_idx * 16)
 
         # Write the result to the destination register
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
@@ -702,19 +701,21 @@ class BNSUBVEC(OTBNInsn):
         # Prepare the result variable
         result = 0
 
-        # Iterate over each 32-bit lane
-        for lane_idx in range(8):
-            src1_lane = (src1 >> (lane_idx * 32)) & 0xFFFFFFFF
-            src2_lane = (src2 >> (lane_idx * 32)) & 0xFFFFFFFF
+        # Iterate over each 16-bit lane
+        for lane_idx in range(16):
+            # Extract the 16-bit values from the current lane
+            src1_lane = (src1 >> (lane_idx * 16)) & 0xFFFF
+            src2_lane = (src2 >> (lane_idx * 16)) & 0xFFFF
 
-            # Perform the subtraction operation on the 32-bit elements
-            add_res = (src1_lane - src2_lane) & 0xFFFFFFFF  # Modulo 2^32 to handle overflow
+            # Perform the subtraction operation on the 16-bit elements
+            sub_res = (src1_lane - src2_lane) & 0xFFFF  # Modulo 2^16 to handle overflow
 
             # Place the result in the corresponding lane of the result variable
-            result |= add_res << (lane_idx * 32)
+            result |= sub_res << (lane_idx * 16)
 
         # Write the result to the destination register
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
 
 
 class BNRSHIFTVEC(OTBNInsn):

@@ -17,9 +17,16 @@
     addi       x3, x0, 3
     BN.LID     x3, 0(x1)         /* w3 has mask with the low 16 bits of each 32-bit word set only. correct */
 
+    /* Load mask with low 128 bits set */
+    la         x1, mask_128b
+    addi       x3, x0, 24
+    BN.LID     x3, 0(x1)         /* w24 has mask with the low 128 bits set */
+    BN.NOT     w25, w24          /* w25 has mask with the upper 128 bits set */
+
     addi       x4, x0, 1         /* x4 : k */
-    addi       x5, x0, 256       /* x5 : len */
+    addi       x5, x0, 0       /* x5 : len = 8 (*2) */
     addi       x6, x0, 0         /* x6 : start */
+    addi       x20, x0, 1            /* looplim */
 
     /* load zeta and broadcast */
     la         x1, zetas         /* Load base address of zetas from memory */
@@ -35,52 +42,64 @@
     sll        x8, x8, x11
     srl        x8, x8, x11
 
-    BN.BROADCAST    w4, x8       /* broadcast zeta across w4 */
+    BN.BROADCAST    w4, x8
 
-    /* Load r[j + len] */
-    la         x1, r
-    add        x1, x1, x5
-    addi       x3, x0, 5
-    BN.LID     x3, 0(x1)         /* r[j + len] elements are in w5 */
-
+loopj:
+    
     /* Load r[j] */
     la         x1, r
+    add        x1, x1, x6
+    addi       x3, x0, 5
+    BN.LID     x3, 0(x1)         /* r[j] elements are in w5 */
+
+    /* Load r[j + len] (next block) */
+    la         x1, r
+    add        x1, x1, x6
+    addi       x1, x1, 32
     addi       x3, x0, 6
-    BN.LID     x3, 0(x1)         /* r[j] elements are in w6 */
+    BN.LID     x3, 0(x1)         /* r[j] (next block) elements are in w6 */
+    BN.RSHI    w26, w6, w5 >> 128
 
-    BN.LSHIFTVEC    w7, w5, 16
-    BN.RSHIFTVEC    w7, w7, 16   /* w7: rjlenlow16vec */
-    BN.RSHIFTVEC    w8, w5, 16   /* w8: rjlenupp16vec */
+    BN.LSHIFTVEC    w7, w26, 16
+    BN.RSHIFTVEC    w7, w7, 16    /* w7: rjlenlow16vec */
+    BN.RSHIFTVEC    w8, w26, 16   /* w8: rjlenupp16vec */
 
-    BN.MULVEC       w9, w4, w7   /* fqmul arg: a = a*b */
+    /* compute tl = fqmul_simd(zeta32vec, rjlenlow16vec); */
+    BN.MULVEC       w9, w4, w7    /* w9: a = a*b */
     BN.MULVEC       w19, w9, w2     /* t = a*QINV */
     BN.MULVEC       w29, w19, w1    /* t = t*KYBER_Q */
+    BN.SUBVEC       w20, w9, w29    /* t = a - (int32_t)t*KYBER_Q */
+    BN.RSHIFTVEC    w21, w20, 16    /* t = t >> 16 */
 
-    BN.SUBVEC       w20, w9, w29
-    BN.RSHIFTVEC    w21, w20, 16
+    BN.AND          w21, w21, w3
 
+    /* compute tu = fqmul_simd(zeta32vec, rjlenupp16vec); */
     BN.MULVEC       w10, w4, w8
     BN.MULVEC       w14, w10, w2
     BN.MULVEC       w14, w14, w1
-
     BN.SUBVEC       w10, w10, w14
     BN.RSHIFTVEC    w10, w10, 16
+
+    BN.AND          w10, w10, w3
     BN.LSHIFTVEC    w11, w10, 16
+
     BN.XOR          w12, w11, w21
 
-    BN.SUBVEC       w13, w6, w12
-    BN.ADDVEC       w22, w6, w12
+    BN.SUBVEC       w13, w5, w12    /* rjlennew = _mm256_sub_epi16(rj16vec, t) */
+    BN.LSHI         w13, w0, w13 >> 128
+    BN.ADDVEC       w22, w5, w12
+    BN.AND          w22, w22, w24
+
+    BN.XOR          w12, w13, w22
 
     /* r[j + len] = r[j] - t */
     la         x1, r
-    add        x1, x1, x5
-    addi       x3, x0, 13
+    addi       x3, x0, 12
     BN.SID     x3, 0(x1)
 
-    /* r[j] = r[j] + t */
-    la         x1, r
-    addi       x3, x0, 22
-    BN.SID     x3, 0(x1)
+    slli       x6, x6, 7
+    addi       x5, x5, 1
+    bne        x5, x20, loopj
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
@@ -234,9 +253,9 @@ end:
     .dword 0x0
 
     .balign 32
-    mask_64b:
-    .dword  0xffffffffffff0000  /* 32 set bits */
-    .dword 0x0
+    mask_128b:
+    .dword  0xffffffffffffffff  /* 32 set bits */
+    .dword  0xffffffffffffffff
     .dword 0x0
     .dword 0x0
 

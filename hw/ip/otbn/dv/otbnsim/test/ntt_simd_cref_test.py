@@ -24,9 +24,9 @@ zetas = [-1044,  -758,  -359, -1517,  1493,  1422,   287,   202,
                     -1185, -1530, -1278,   794, -1510,  -854,  -870,   478,
                     -108,  -308,   996,   991,   958, -1460,  1522,  1628]
 
-r = [15377, -26226, -16503, 13125, 23887, -6490, -18999, 2168, 12817, -22940, 1276, 14694, 19688, 4012, 7521, 4266] + [0]*240
+#r = [15377] + [0]*255
   
-t_r = [15377, -26226, -16503, 13125, 23887, -6490, -18999, 
+r = [15377, -26226, -16503, 13125, 23887, -6490, -18999, 
   2168, 12817, -22940, 1276, 14694, 19688, 4012, 7521, 4266, 
   30630, 11040, 10560, 7704, -3242, 73, -5305, -8095, 8633, 
   1384, 4132, -24258, -31679, 24477, -11072, -19693, -8324, 
@@ -103,7 +103,7 @@ def create_tests(dirpath):
         init_vals, init_asm_data = generate_otbn_data_section_16bit(r)
 
         # Create the input files
-        for i in range(256):
+        for i in range(16):
             tmpcopy = asm_template
             # Write the input value into the template
             tmpreplace = tmpcopy.replace("[idx]", str(i))
@@ -130,7 +130,7 @@ def create_tests(dirpath):
         r_res = [res[i] for i in range(256)]
 
         # Create the output files
-        for i in range(256):
+        for i in range(16):
             tmpcopy = exp_template
 
             tmpreplace = tmpcopy.replace("[rj]", str(r_res[i] & 0xFFFF))        # remember j gets updated an extra time in python

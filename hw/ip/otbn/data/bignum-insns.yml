@@ -823,9 +823,8 @@
       wrd: wrd # Destination register (5 bits to address 32 registers)
       wrs1: wrs1 # Source register (5 bits to address 32 registers)
       wrs2: wrs2
-      funct3: b111
+      funct2: b11
       imm: imm # Immediate value for shift amount (needs specific encoding)
-      funct2: b11 # Could remain the same or change based on ISA design
 
 - mnemonic: bn.sel
   synopsis: Flag Select

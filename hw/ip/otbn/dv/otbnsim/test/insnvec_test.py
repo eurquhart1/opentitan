@@ -478,7 +478,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
             shift_inps.append([generate_random_int32_array(), random.randint(0, 17)])
             and_inps.append([generate_random_int32_array(), generate_random_int32_array()])
             broadcast_inps.append(random.randint(0, 0xFFFF))
-            shift_reg_left_inputs.append([generate_random_256bit_number(), random.randint(1, 31)])
+            shift_reg_left_inputs.append([generate_random_256bit_number(), random.randint(1, 128)])
         
         # Create all of the input/output files in the /testadd directory
         #tests += create_tests_bnvecmul("test/test_bnvecmul", input_pairs)

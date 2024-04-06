@@ -654,6 +654,7 @@ class BNADDVEC(OTBNInsn):
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
 
 
+
 class BNANDVEC(OTBNInsn):
     insn = insn_for_mnemonic('bn.andvec', 3)
 
@@ -1226,7 +1227,7 @@ class BNLSHI(OTBNInsn):
         a = state.wdrs.get_reg(self.wrs1).read_unsigned()
         b = state.wdrs.get_reg(self.wrs2).read_unsigned()
 
-        result = (b << self.imm) & ((1 << 256) - 1)
+        result = (((a << 256) | b) << self.imm) & ((1 << 256) - 1)
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
 
 

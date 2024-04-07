@@ -24,9 +24,11 @@
     BN.NOT     w25, w24          /* w25 has mask with the upper 128 bits set */
 
     addi       x4, x0, 1         /* x4 : k */
-    addi       x5, x0, 0       /* x5 : len = 8 (*2) */
-    addi       x6, x0, 0         /* x6 : start */
-    addi       x20, x0, 1            /* looplim */
+    addi       x20, x0, 16       /* x20: inner looplim */
+    addi       x21, x0, 16       /* x21: outer looplim */
+    addi       x22, x0, 0        /* x22: start (outer loop ctr) */
+
+loopstart:
 
     /* load zeta and broadcast */
     la         x1, zetas         /* Load base address of zetas from memory */
@@ -43,6 +45,10 @@
     srl        x8, x8, x11
 
     BN.BROADCAST    w4, x8
+
+    addi       x4, x4, 1         /* k += 1 */
+    addi       x6, x0, 0         /* x6 : offset to next block */
+    addi       x5, x0, 0         /* x5 : inner loop ctr */
 
 loopj:
     
@@ -94,12 +100,16 @@ loopj:
 
     /* r[j + len] = r[j] - t */
     la         x1, r
+    add        x1, x1, x6
     addi       x3, x0, 12
     BN.SID     x3, 0(x1)
 
-    slli       x6, x6, 7
+    addi       x6, x6, 32
     addi       x5, x5, 1
     bne        x5, x20, loopj
+
+    addi       x22, x22, 16
+    bne        x22, x21, loopstart
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
@@ -107,12 +117,12 @@ loopj:
     srai       x13, x11, 1
     slli       x13, x13, 2        /* x13 : j*2 ... offset to element in r */
     add        x2, x1, x13        /* x1 : base address of r plus offset to element */
-    lw         x5, 0(x2)         /* load word 32 bits */
+    lw         x15, 0(x2)         /* load word 32 bits */
     and        x18, x11, 1        /* j mod 2 */
     xor        x17, x18, 1        /* inverse */
     slli       x18, x18, 4        /* shift idx left by 4 */
     slli       x17, x17, 4        /* shift idx inverse left by 4 */
-    srl        x19, x5, x18
+    srl        x19, x15, x18
     sll        x19, x19, x17
     srl        x19, x19, x17
 

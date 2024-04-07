@@ -133,7 +133,7 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
     }
   //}*/
   len = 8;
-  for(start = 0; start < 256; start += 2*len) {
+  for(start = 0; start < 240; start += 2*len) {
       zeta = zetas[k++];
       __m256i zeta32vec = _mm256_set1_epi32(zeta);
       for(j = start; j < start + len; j+=16) {

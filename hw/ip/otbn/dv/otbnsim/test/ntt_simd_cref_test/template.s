@@ -24,7 +24,7 @@
     BN.NOT     w25, w24          /* w25 has mask with the upper 128 bits set */
 
     addi       x4, x0, 1         /* x4 : k */
-    addi       x20, x0, 2       /* x20: inner looplim */
+    addi       x20, x0, 16       /* x20: inner looplim */
     addi       x21, x0, 16       /* x21: outer looplim */
     addi       x22, x0, 0        /* x22: start (outer loop ctr) */
 

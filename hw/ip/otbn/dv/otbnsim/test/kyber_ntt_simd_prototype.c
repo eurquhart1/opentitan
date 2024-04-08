@@ -6,7 +6,7 @@
 #include <inttypes.h> // For PRIx16
 
 #define KYBER_Q 3329
-#define QINV 62209 // q^-1 mod 2^16
+#define QINV 62209 // q^-1 mod 2^16 (32-bit representationi)
 
 __m256i qinv32vec;
 __m256i kyberq32vec;
@@ -133,10 +133,11 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
     }
   //}*/
   len = 8;
-  for(start = 0; start < 240; start += 2*len) {
+  //for(start = 0; start < 16; start += 2*len) {
+    start = 0;
       zeta = zetas[k++];
       __m256i zeta32vec = _mm256_set1_epi32(zeta);
-      for(j = start; j < start + len; j+=16) {
+      for(j = start; j < 32; j+=16) {
         __m256i rjlen16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j + len]);
         __m256i rj16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j]);
         __m256i rj16vecnext = _mm256_loadu_si256((__m256i*) & arr_simd[j + 16]);
@@ -160,7 +161,7 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
         __m256i res = _mm256_xor_epi32(rjnew, rjlennew);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], res);
       }
-  }
+  //}
   /*len = 4;
   for(start = 0; start < 256; start += 2*len) {
       zeta = zetas[k++];

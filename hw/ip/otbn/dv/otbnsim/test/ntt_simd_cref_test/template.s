@@ -24,7 +24,7 @@
     BN.NOT     w25, w24          /* w25 has mask with the upper 128 bits set */
 
     addi       x4, x0, 1         /* x4 : k */
-    addi       x20, x0, 16       /* x20: inner looplim */
+    addi       x20, x0, 2       /* x20: inner looplim */
     addi       x21, x0, 16       /* x21: outer looplim */
     addi       x22, x0, 0        /* x22: start (outer loop ctr) */
 
@@ -62,9 +62,9 @@ loopj:
     la         x1, r
     add        x1, x1, x6
     addi       x1, x1, 32
-    addi       x3, x0, 6
+    addi       x3, x0, 26
     BN.LID     x3, 0(x1)         /* r[j] (next block) elements are in w6 */
-    BN.RSHI    w26, w6, w5 >> 128
+    BN.RSHI    w26, w26, w5 >> 128
 
     BN.LSHIFTVEC    w7, w26, 16
     BN.RSHIFTVEC    w7, w7, 16    /* w7: rjlenlow16vec */
@@ -72,7 +72,7 @@ loopj:
 
     /* compute tl = fqmul_simd(zeta32vec, rjlenlow16vec); */
     BN.MULVEC       w9, w4, w7    /* w9: a = a*b */
-    BN.MULVEC       w19, w9, w2     /* t = a*QINV */
+    BN.MULVEC32       w19, w9, w2     /* t = a*QINV */
     BN.MULVEC       w29, w19, w1    /* t = t*KYBER_Q */
     BN.SUBVEC       w20, w9, w29    /* t = a - (int32_t)t*KYBER_Q */
     BN.RSHIFTVEC    w21, w20, 16    /* t = t >> 16 */
@@ -81,7 +81,7 @@ loopj:
 
     /* compute tu = fqmul_simd(zeta32vec, rjlenupp16vec); */
     BN.MULVEC       w10, w4, w8
-    BN.MULVEC       w14, w10, w2
+    BN.MULVEC32       w14, w10, w2
     BN.MULVEC       w14, w14, w1
     BN.SUBVEC       w10, w10, w14
     BN.RSHIFTVEC    w10, w10, 16
@@ -109,7 +109,7 @@ loopj:
     bne        x5, x20, loopj
 
     addi       x22, x22, 16
-    bne        x22, x21, loopstart
+    /*bne        x22, x21, loopstart*/
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
@@ -241,8 +241,7 @@ end:
 
     .balign 32
     qinv:
-    .word  0xf301  /* -3327 in 32-bit two's complement */
-    .word  0x0
+    .dword  0xfffff301  /* -3327 in 32-bit two's complement */
     .dword 0x0
     .dword 0x0
     .dword 0x0

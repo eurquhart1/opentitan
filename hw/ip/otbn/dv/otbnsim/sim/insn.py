@@ -621,6 +621,39 @@ class BNMULVEC(OTBNInsn):
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
 
 
+class BNMULVEC32(OTBNInsn):
+    insn = insn_for_mnemonic('bn.mulvec32', 3)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs1 = op_vals['wrs1']
+        self.wrs2 = op_vals['wrs2']
+
+    def execute(self, state: OTBNState) -> None:
+        # Read the 256-bit values from the source registers
+        src1 = state.wdrs.get_reg(self.wrs1).read_unsigned()
+        src2 = state.wdrs.get_reg(self.wrs2).read_unsigned()
+
+        # Prepare the result variable
+        result = 0
+
+        # Iterate over each 32-bit lane
+        for lane_idx in range(8):
+            # Extract the 16-bit elements (lanes) from each source
+            src1_lane = (src1 >> (lane_idx * 32)) & 0xFFFFFFFF
+            src2_lane = (src2 >> (lane_idx * 32)) & 0xFFFFFFFF
+
+            # Perform the multiply operation on the 16-bit elements, with result that should fit within 32 bits
+            mul_res = (src1_lane * src2_lane) & 0xFFFFFFFF
+
+            # Place the result in the corresponding lane of the result variable
+            result |= mul_res << (lane_idx * 32)
+
+        # Write the result to the destination register
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+
 class BNADDVEC(OTBNInsn):
     insn = insn_for_mnemonic('bn.addvec', 3)
 
@@ -1546,7 +1579,7 @@ INSN_CLASSES = [
     ECALL,
     LOOP, LOOPI,
 
-    BNCRASH, BNMULVEC, BNADDVEC, BNSUBVEC, 
+    BNCRASH, BNMULVEC, BNMULVEC32, BNADDVEC, BNSUBVEC, 
     BNANDVEC, BNRSHIFTVEC, BNLSHIFTVEC,
     BNBROADCAST, BNADD, BNADDC, BNADDI, BNADDM,
     BNMULQACC, BNMULQACCWO, BNMULQACCSO,

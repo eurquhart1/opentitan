@@ -133,11 +133,9 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
     }
   //}*/
   len = 8;
-  //for(start = 0; start < 16; start += 2*len) {
-    start = 0;
+  for(j = 0; j < 256; j += 16) {
       zeta = zetas[k++];
       __m256i zeta32vec = _mm256_set1_epi32(zeta);
-      for(j = start; j < 32; j+=16) {
         __m256i rjlen16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j + len]);
         __m256i rj16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j]);
         __m256i rj16vecnext = _mm256_loadu_si256((__m256i*) & arr_simd[j + 16]);
@@ -160,8 +158,7 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
         rjnew = _mm256_inserti128_si256(_mm256_setzero_si256(), _mm256_castsi256_si128(rjnew), 0);
         __m256i res = _mm256_xor_epi32(rjnew, rjlennew);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], res);
-      }
-  //}
+  }
   /*len = 4;
   for(start = 0; start < 256; start += 2*len) {
       zeta = zetas[k++];

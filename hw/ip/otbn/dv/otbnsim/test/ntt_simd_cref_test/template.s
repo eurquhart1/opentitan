@@ -17,16 +17,15 @@
     addi       x3, x0, 3
     BN.LID     x3, 0(x1)         /* w3 has mask with the low 16 bits of each 32-bit word set only. correct */
 
-    /* Load mask with low 64 bits of each 128 bits set */
-    la         x1, len4mask
+    /* Load mask with low 32 bits of each 64 bits set */
+    la         x1, len2mask
     addi       x3, x0, 17
     BN.LID     x3, 0(x1)
 
-    /* Load mask with low 128 bits set */
-    la         x1, mask_128b
-    addi       x3, x0, 24
-    BN.LID     x3, 0(x1)         /* w24 has mask with the low 128 bits set */
-    BN.NOT     w25, w24          /* w25 has mask with the upper 128 bits set */
+    /* Load mask with low 64 bits set */
+    la         x1, mask_64b
+    addi       x3, x0, 25
+    BN.LID     x3, 0(x1)         /* w24 has mask with the low 64 bits set */
 
     addi       x4, x0, 1         /* x4 : k */
     addi       x20, x0, 15       /* x20: inner looplim */
@@ -50,7 +49,8 @@ loopj:
     srl        x8, x8, x11
 
     BN.BROADCAST    w4, x8
-    BN.AND          w4, w4, w24 /* limit to the lower 128 bits */
+    BN.AND          w4, w4, w25 /* limit to the lower 64 bits */
+    BN.LSHI         w24, w0, w25 >> 64      /* shift 64-bit mask to next z */
 
     addi       x4, x4, 1         /* k += 1 */
 
@@ -69,8 +69,51 @@ loopj:
     srl        x8, x8, x11
 
     BN.BROADCAST    w15, x8
-    BN.AND          w15, w15, w25   /* limit to the upper 128 bits */
+    BN.AND          w15, w15, w24   /* limit to the relevant 64 bits */
     BN.XOR          w4, w4, w15     /* combine the zetas */
+    BN.LSHI         w24, w0, w24 >> 64    /* shift 64-bit mask to next z */
+
+    addi       x4, x4, 1         /* k += 1 */
+
+    /* load next zeta and broadcast */
+    la         x1, zetas         /* Load base address of zetas from memory */
+    srai       x7, x4, 1
+    slli       x7, x7, 2         /* x7 : k*2 ... offset to element in zetas */
+    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
+    lw         x8, 0(x2)         /* load word 32 bits */
+    and        x9, x4, 1         /* k mod 2 */
+    xor        x10, x9, 1        /* inverse */
+    slli       x11, x9, 4        /* shift idx left by 4 */
+    slli       x12, x10, 4
+    srl        x8, x8, x12
+    sll        x8, x8, x11
+    srl        x8, x8, x11
+
+    BN.BROADCAST    w15, x8
+    BN.AND          w15, w15, w24   /* limit to the relevant 64 bits */
+    BN.XOR          w4, w4, w15     /* combine the zetas */
+    BN.LSHI         w24, w0, w24 >> 64    /* shift 64-bit mask to next z */
+
+    addi       x4, x4, 1         /* k += 1 */
+
+    /* load next zeta and broadcast */
+    la         x1, zetas         /* Load base address of zetas from memory */
+    srai       x7, x4, 1
+    slli       x7, x7, 2         /* x7 : k*2 ... offset to element in zetas */
+    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
+    lw         x8, 0(x2)         /* load word 32 bits */
+    and        x9, x4, 1         /* k mod 2 */
+    xor        x10, x9, 1        /* inverse */
+    slli       x11, x9, 4        /* shift idx left by 4 */
+    slli       x12, x10, 4
+    srl        x8, x8, x12
+    sll        x8, x8, x11
+    srl        x8, x8, x11
+
+    BN.BROADCAST    w15, x8
+    BN.AND          w15, w15, w24   /* limit to the relevant 64 bits */
+    BN.XOR          w4, w4, w15     /* combine the zetas */
+    BN.LSHI         w24, w0, w24 >> 64
 
     addi       x4, x4, 1         /* k += 1 */
     
@@ -86,7 +129,7 @@ loopj:
     addi       x1, x1, 32
     addi       x3, x0, 26
     BN.LID     x3, 0(x1)         /* r[j] (next block) elements are in w6 */
-    BN.RSHI    w26, w26, w5 >> 64
+    BN.RSHI    w26, w26, w5 >> 32
 
     BN.LSHIFTVEC    w7, w26, 16
     BN.RSHIFTVEC    w7, w7, 16    /* w7: rjlenlow16vec */
@@ -115,7 +158,7 @@ loopj:
 
     BN.SUBVEC       w13, w5, w12    /* rjlennew = _mm256_sub_epi16(rj16vec, t) */
     BN.AND          w13, w13, w17
-    BN.LSHI         w13, w0, w13 >> 64
+    BN.LSHI         w13, w0, w13 >> 32
     BN.ADDVEC       w22, w5, w12
     BN.AND          w22, w22, w17
 
@@ -146,7 +189,8 @@ loopj:
     srl        x8, x8, x11
 
     BN.BROADCAST    w4, x8
-    BN.AND          w4, w4, w24 /* limit to the lower 128 bits */
+    BN.AND          w4, w4, w25 /* limit to the lower 64 bits */
+    BN.LSHI         w24, w0, w25 >> 64      /* shift 64-bit mask to next z */
 
     addi       x4, x4, 1         /* k += 1 */
 
@@ -165,19 +209,65 @@ loopj:
     srl        x8, x8, x11
 
     BN.BROADCAST    w15, x8
-    BN.AND          w15, w15, w25   /* limit to the upper 128 bits */
+    BN.AND          w15, w15, w24   /* limit to the relevant 64 bits */
     BN.XOR          w4, w4, w15     /* combine the zetas */
+    BN.LSHI         w24, w0, w24 >> 64    /* shift 64-bit mask to next z */
 
     addi       x4, x4, 1         /* k += 1 */
 
+    /* load next zeta and broadcast */
+    la         x1, zetas         /* Load base address of zetas from memory */
+    srai       x7, x4, 1
+    slli       x7, x7, 2         /* x7 : k*2 ... offset to element in zetas */
+    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
+    lw         x8, 0(x2)         /* load word 32 bits */
+    and        x9, x4, 1         /* k mod 2 */
+    xor        x10, x9, 1        /* inverse */
+    slli       x11, x9, 4        /* shift idx left by 4 */
+    slli       x12, x10, 4
+    srl        x8, x8, x12
+    sll        x8, x8, x11
+    srl        x8, x8, x11
+
+    BN.BROADCAST    w15, x8
+    BN.AND          w15, w15, w24   /* limit to the relevant 64 bits */
+    BN.XOR          w4, w4, w15     /* combine the zetas */
+    BN.LSHI         w24, w0, w24 >> 64    /* shift 64-bit mask to next z */
+
+    addi       x4, x4, 1         /* k += 1 */
+
+    /* load next zeta and broadcast */
+    la         x1, zetas         /* Load base address of zetas from memory */
+    srai       x7, x4, 1
+    slli       x7, x7, 2         /* x7 : k*2 ... offset to element in zetas */
+    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
+    lw         x8, 0(x2)         /* load word 32 bits */
+    and        x9, x4, 1         /* k mod 2 */
+    xor        x10, x9, 1        /* inverse */
+    slli       x11, x9, 4        /* shift idx left by 4 */
+    slli       x12, x10, 4
+    srl        x8, x8, x12
+    sll        x8, x8, x11
+    srl        x8, x8, x11
+
+    BN.BROADCAST    w15, x8
+    BN.AND          w15, w15, w24   /* limit to the relevant 64 bits */
+    BN.XOR          w4, w4, w15     /* combine the zetas */
+    BN.LSHI         w24, w0, w24 >> 64
+    
     /* Load r[j] */
     la         x1, r
     add        x1, x1, x6
     addi       x3, x0, 5
     BN.LID     x3, 0(x1)         /* r[j] elements are in w5 */
 
-    /* Load r[j + len] */
-    BN.RSHI    w26, w0, w5 >> 64
+    /* Load r[j + len] (next block) */
+    la         x1, r
+    add        x1, x1, x6
+    addi       x1, x1, 32
+    addi       x3, x0, 26
+    BN.LID     x3, 0(x1)         /* r[j] (next block) elements are in w6 */
+    BN.RSHI    w26, w0, w5 >> 32
 
     BN.LSHIFTVEC    w7, w26, 16
     BN.RSHIFTVEC    w7, w7, 16    /* w7: rjlenlow16vec */
@@ -206,7 +296,7 @@ loopj:
 
     BN.SUBVEC       w13, w5, w12    /* rjlennew = _mm256_sub_epi16(rj16vec, t) */
     BN.AND          w13, w13, w17
-    BN.LSHI         w13, w0, w13 >> 64
+    BN.LSHI         w13, w0, w13 >> 32
     BN.ADDVEC       w22, w5, w12
     BN.AND          w22, w22, w17
 
@@ -347,6 +437,13 @@ end:
     .dword 0x0
 
     .balign 32
+    len2mask:
+    .dword 0x00000000ffffffff
+    .dword 0x00000000ffffffff
+    .dword 0x00000000ffffffff
+    .dword 0x00000000ffffffff
+
+    .balign 32
     ropp:
     .dword 0xffffffffffff9d83  /* Q = 3329 */
     .dword 0xffffffffffffffff
@@ -377,8 +474,15 @@ end:
 
     .balign 32
     mask_128b:
-    .dword  0xffffffffffffffff  /* 32 set bits */
+    .dword  0xffffffffffffffff  /* 64 set bits */
     .dword  0xffffffffffffffff
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    mask_64b:
+    .dword  0xffffffffffffffff  /* 64 set bits */
+    .dword  0x0
     .dword 0x0
     .dword 0x0
 

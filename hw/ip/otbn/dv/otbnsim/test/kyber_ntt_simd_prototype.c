@@ -173,7 +173,7 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
         _mm256_storeu_si256((__m256i*)&arr_simd[j], res);
   }*/
   int16_t tx;
-  len = 4;
+  len = 2;
   for(start = 0; start < 256; start = j + len) {
       zeta = zetas[k++];
       for(j = start; j < start + len; j++) {

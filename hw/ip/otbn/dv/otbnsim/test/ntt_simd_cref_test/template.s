@@ -17,6 +17,11 @@
     addi       x3, x0, 3
     BN.LID     x3, 0(x1)         /* w3 has mask with the low 16 bits of each 32-bit word set only. correct */
 
+    /* Load mask with low 64 bits of each 128 bits set */
+    la         x1, len4mask
+    addi       x3, x0, 17
+    BN.LID     x3, 0(x1)
+
     /* Load mask with low 128 bits set */
     la         x1, mask_128b
     addi       x3, x0, 24
@@ -25,8 +30,6 @@
 
     addi       x4, x0, 1         /* x4 : k */
     addi       x20, x0, 15       /* x20: inner looplim */
-    addi       x21, x0, 16       /* x21: outer looplim */
-    addi       x22, x0, 0        /* x22: start (outer loop ctr) */
     addi       x6, x0, 0         /* x6 : offset to next block */
     addi       x5, x0, 0         /* x5 : inner loop ctr */
 
@@ -47,6 +50,27 @@ loopj:
     srl        x8, x8, x11
 
     BN.BROADCAST    w4, x8
+    BN.AND          w4, w4, w24 /* limit to the lower 128 bits */
+
+    addi       x4, x4, 1         /* k += 1 */
+
+    /* load next zeta and broadcast */
+    la         x1, zetas         /* Load base address of zetas from memory */
+    srai       x7, x4, 1
+    slli       x7, x7, 2         /* x7 : k*2 ... offset to element in zetas */
+    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
+    lw         x8, 0(x2)         /* load word 32 bits */
+    and        x9, x4, 1         /* k mod 2 */
+    xor        x10, x9, 1        /* inverse */
+    slli       x11, x9, 4        /* shift idx left by 4 */
+    slli       x12, x10, 4
+    srl        x8, x8, x12
+    sll        x8, x8, x11
+    srl        x8, x8, x11
+
+    BN.BROADCAST    w15, x8
+    BN.AND          w15, w15, w25   /* limit to the upper 128 bits */
+    BN.XOR          w4, w4, w15     /* combine the zetas */
 
     addi       x4, x4, 1         /* k += 1 */
     
@@ -62,7 +86,7 @@ loopj:
     addi       x1, x1, 32
     addi       x3, x0, 26
     BN.LID     x3, 0(x1)         /* r[j] (next block) elements are in w6 */
-    BN.RSHI    w26, w26, w5 >> 128
+    BN.RSHI    w26, w26, w5 >> 64
 
     BN.LSHIFTVEC    w7, w26, 16
     BN.RSHIFTVEC    w7, w7, 16    /* w7: rjlenlow16vec */
@@ -90,9 +114,10 @@ loopj:
     BN.XOR          w12, w11, w21
 
     BN.SUBVEC       w13, w5, w12    /* rjlennew = _mm256_sub_epi16(rj16vec, t) */
-    BN.LSHI         w13, w0, w13 >> 128
+    BN.AND          w13, w13, w17
+    BN.LSHI         w13, w0, w13 >> 64
     BN.ADDVEC       w22, w5, w12
-    BN.AND          w22, w22, w24
+    BN.AND          w22, w22, w17
 
     BN.XOR          w12, w13, w22
 
@@ -121,6 +146,29 @@ loopj:
     srl        x8, x8, x11
 
     BN.BROADCAST    w4, x8
+    BN.AND          w4, w4, w24 /* limit to the lower 128 bits */
+
+    addi       x4, x4, 1         /* k += 1 */
+
+    /* load next zeta and broadcast */
+    la         x1, zetas         /* Load base address of zetas from memory */
+    srai       x7, x4, 1
+    slli       x7, x7, 2         /* x7 : k*2 ... offset to element in zetas */
+    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
+    lw         x8, 0(x2)         /* load word 32 bits */
+    and        x9, x4, 1         /* k mod 2 */
+    xor        x10, x9, 1        /* inverse */
+    slli       x11, x9, 4        /* shift idx left by 4 */
+    slli       x12, x10, 4
+    srl        x8, x8, x12
+    sll        x8, x8, x11
+    srl        x8, x8, x11
+
+    BN.BROADCAST    w15, x8
+    BN.AND          w15, w15, w25   /* limit to the upper 128 bits */
+    BN.XOR          w4, w4, w15     /* combine the zetas */
+
+    addi       x4, x4, 1         /* k += 1 */
 
     /* Load r[j] */
     la         x1, r
@@ -128,13 +176,8 @@ loopj:
     addi       x3, x0, 5
     BN.LID     x3, 0(x1)         /* r[j] elements are in w5 */
 
-    /* Load r[j + len] (next block) */
-    la         x1, r
-    add        x1, x1, x6
-    addi       x1, x1, 32
-    addi       x3, x0, 26
-    BN.LID     x3, 0(x1)         /* r[j] (next block) elements are in w6 */
-    BN.RSHI    w26, w0, w5 >> 128
+    /* Load r[j + len] */
+    BN.RSHI    w26, w0, w5 >> 64
 
     BN.LSHIFTVEC    w7, w26, 16
     BN.RSHIFTVEC    w7, w7, 16    /* w7: rjlenlow16vec */
@@ -162,9 +205,10 @@ loopj:
     BN.XOR          w12, w11, w21
 
     BN.SUBVEC       w13, w5, w12    /* rjlennew = _mm256_sub_epi16(rj16vec, t) */
-    BN.LSHI         w13, w0, w13 >> 128
+    BN.AND          w13, w13, w17
+    BN.LSHI         w13, w0, w13 >> 64
     BN.ADDVEC       w22, w5, w12
-    BN.AND          w22, w22, w24
+    BN.AND          w22, w22, w17
 
     BN.XOR          w12, w13, w22
 
@@ -173,9 +217,6 @@ loopj:
     add        x1, x1, x6
     addi       x3, x0, 12
     BN.SID     x3, 0(x1)
-
-    addi       x22, x22, 16
-    /*bne        x22, x21, loopstart*/
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
@@ -297,6 +338,13 @@ end:
     .dword 0xffffffffffffffff
     .dword 0xffffffffffffffff
     .dword 0xffffffffffffffff
+
+    .balign 32
+    len4mask:
+    .dword 0xffffffffffffffff
+    .dword 0x0
+    .dword 0xffffffffffffffff
+    .dword 0x0
 
     .balign 32
     ropp:

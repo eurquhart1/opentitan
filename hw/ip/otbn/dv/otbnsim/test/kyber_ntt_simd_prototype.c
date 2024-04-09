@@ -87,6 +87,19 @@ static __m256i fqmul_simd(__m256i a, __m256i b) {
   return out;
 }
 
+int16_t montgomery_reduce(int32_t a)
+{
+  int16_t t;
+
+  t = (int16_t)a*QINV;
+  t = (a - (int32_t)t*KYBER_Q) >> 16;
+  return t;
+}
+
+static int16_t fqmul(int16_t a, int16_t b) {
+  return montgomery_reduce((int32_t)a*b);
+}
+
 int16_t* ntt_simd(int16_t arr_simd[256]) {
   unsigned int len, start, j, k;
   int16_t zeta;
@@ -132,7 +145,7 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
       }
     }
   //}*/
-  len = 8;
+  /*len = 8;
   for(j = 0; j < 256; j += 16) {
       zeta = zetas[k++];
       __m256i zeta32vec = _mm256_set1_epi32(zeta);
@@ -158,9 +171,18 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
         rjnew = _mm256_inserti128_si256(_mm256_setzero_si256(), _mm256_castsi256_si128(rjnew), 0);
         __m256i res = _mm256_xor_epi32(rjnew, rjlennew);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], res);
-  }
-  /*len = 4;
-  for(start = 0; start < 256; start += 2*len) {
+  }*/
+  int16_t tx;
+  len = 4;
+  for(start = 0; start < 256; start = j + len) {
+      zeta = zetas[k++];
+      for(j = start; j < start + len; j++) {
+        tx = fqmul(zeta, arr_simd[j + len]);
+        arr_simd[j + len] = arr_simd[j] - tx;
+        arr_simd[j] = arr_simd[j] + tx;
+      }
+    }
+  /*for(start = 0; start < 256; start += 2*len) {
       zeta = zetas[k++];
       __m256i zeta32vec = _mm256_set1_epi32(zeta);
       for(j = start; j < start + len; j+=8) {
@@ -191,8 +213,9 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
         res = _mm256_xor_epi32(res, res_offset);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], res);
       }
-  }
-  len = 2;
+  }*/
+
+  /*len = 2;
   for(start = 0; start < 256; start += 2*len) {
       zeta = zetas[k++];
       __m256i zeta32vec = _mm256_set1_epi32(zeta);

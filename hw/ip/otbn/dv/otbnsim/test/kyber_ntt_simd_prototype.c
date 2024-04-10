@@ -191,6 +191,15 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
         arr_simd[j] = arr_simd[j] + tx;
       }
     }
+  len = 2;
+  for(start = 0; start < 256; start = j + len) {
+      zeta = zetas[k++];
+      for(j = start; j < start + len; j++) {
+        tx = fqmul(zeta, arr_simd[j + len]);
+        arr_simd[j + len] = arr_simd[j] - tx;
+        arr_simd[j] = arr_simd[j] + tx;
+      }
+    }
   /*for(start = 0; start < 256; start += 2*len) {
       zeta = zetas[k++];
       __m256i zeta32vec = _mm256_set1_epi32(zeta);

@@ -17,6 +17,11 @@
     addi       x3, x0, 3
     BN.LID     x3, 0(x1)         /* w3 has mask with the low 16 bits of each 32-bit word set only. correct */
 
+    /* Load mask with low 64 bits of each 128 bits set */
+    la         x1, len4mask
+    addi       x3, x0, 17
+    BN.LID     x3, 0(x1)
+
     /* Load mask with low 128 bits set */
     la         x1, mask_128b
     addi       x3, x0, 24
@@ -28,166 +33,7 @@
     addi       x6, x0, 0         /* x6 : offset to next block */
     addi       x5, x0, 0         /* x5 : inner loop ctr */
 
-loopj_len8:
-
-    /* load zeta and broadcast */
-    la         x1, zetas         /* Load base address of zetas from memory */
-    srai       x7, x4, 1
-    slli       x7, x7, 2         /* x7 : k*2 ... offset to element in zetas */
-    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
-    lw         x8, 0(x2)         /* load word 32 bits */
-    and        x9, x4, 1         /* k mod 2 */
-    xor        x10, x9, 1        /* inverse */
-    slli       x11, x9, 4        /* shift idx left by 4 */
-    slli       x12, x10, 4
-    srl        x8, x8, x12
-    sll        x8, x8, x11
-    srl        x8, x8, x11
-
-    BN.BROADCAST    w4, x8
-
-    addi       x4, x4, 1         /* k += 1 */
-    
-    /* Load r[j] */
-    la         x1, r
-    add        x1, x1, x6
-    addi       x3, x0, 5
-    BN.LID     x3, 0(x1)         /* r[j] elements are in w5 */
-
-    /* Load r[j + len] (next block) */
-    la         x1, r
-    add        x1, x1, x6
-    addi       x1, x1, 32
-    addi       x3, x0, 26
-    BN.LID     x3, 0(x1)         /* r[j] (next block) elements are in w6 */
-    BN.RSHI    w26, w26, w5 >> 128
-
-    BN.LSHIFTVEC    w7, w26, 16
-    BN.RSHIFTVEC    w7, w7, 16    /* w7: rjlenlow16vec */
-    BN.RSHIFTVEC    w8, w26, 16   /* w8: rjlenupp16vec */
-
-    /* compute tl = fqmul_simd(zeta32vec, rjlenlow16vec); */
-    BN.MULVEC       w9, w4, w7    /* w9: a = a*b */
-    BN.MULVEC32       w19, w9, w2     /* t = a*QINV */
-    BN.MULVEC       w29, w19, w1    /* t = t*KYBER_Q */
-    BN.SUBVEC       w20, w9, w29    /* t = a - (int32_t)t*KYBER_Q */
-    BN.RSHIFTVEC    w21, w20, 16    /* t = t >> 16 */
-
-    BN.AND          w21, w21, w3
-
-    /* compute tu = fqmul_simd(zeta32vec, rjlenupp16vec); */
-    BN.MULVEC       w10, w4, w8
-    BN.MULVEC32       w14, w10, w2
-    BN.MULVEC       w14, w14, w1
-    BN.SUBVEC       w10, w10, w14
-    BN.RSHIFTVEC    w10, w10, 16
-
-    BN.AND          w10, w10, w3
-    BN.LSHIFTVEC    w11, w10, 16
-
-    BN.XOR          w12, w11, w21
-
-    BN.SUBVEC       w13, w5, w12    /* rjlennew = _mm256_sub_epi16(rj16vec, t) */
-    BN.LSHI         w13, w0, w13 >> 128
-    BN.ADDVEC       w22, w5, w12
-    BN.AND          w22, w22, w24
-
-    BN.XOR          w12, w13, w22
-
-    /* r[j + len] = r[j] - t */
-    la         x1, r
-    add        x1, x1, x6
-    addi       x3, x0, 12
-    BN.SID     x3, 0(x1)
-
-    addi       x6, x6, 32
-    addi       x5, x5, 1
-    bne        x5, x20, loopj_len8
-
-    /*****************************************************************************/
-
-    /* load zeta and broadcast */
-    la         x1, zetas         /* Load base address of zetas from memory */
-    srai       x7, x4, 1
-    slli       x7, x7, 2         /* x7 : k*2 ... offset to element in zetas */
-    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
-    lw         x8, 0(x2)         /* load word 32 bits */
-    and        x9, x4, 1         /* k mod 2 */
-    xor        x10, x9, 1        /* inverse */
-    slli       x11, x9, 4        /* shift idx left by 4 */
-    slli       x12, x10, 4
-    srl        x8, x8, x12
-    sll        x8, x8, x11
-    srl        x8, x8, x11
-
-    addi       x4, x4, 1
-
-    BN.BROADCAST    w4, x8
-
-    /* Load r[j] */
-    la         x1, r
-    add        x1, x1, x6
-    addi       x3, x0, 5
-    BN.LID     x3, 0(x1)         /* r[j] elements are in w5 */
-
-    /* Load r[j + len] (next block) */
-    la         x1, r
-    add        x1, x1, x6
-    addi       x1, x1, 32
-    addi       x3, x0, 26
-    BN.LID     x3, 0(x1)         /* r[j] (next block) elements are in w6 */
-    BN.RSHI    w26, w0, w5 >> 128
-
-    BN.LSHIFTVEC    w7, w26, 16
-    BN.RSHIFTVEC    w7, w7, 16    /* w7: rjlenlow16vec */
-    BN.RSHIFTVEC    w8, w26, 16   /* w8: rjlenupp16vec */
-
-    /* compute tl = fqmul_simd(zeta32vec, rjlenlow16vec); */
-    BN.MULVEC       w9, w4, w7    /* w9: a = a*b */
-    BN.MULVEC32       w19, w9, w2     /* t = a*QINV */
-    BN.MULVEC       w29, w19, w1    /* t = t*KYBER_Q */
-    BN.SUBVEC       w20, w9, w29    /* t = a - (int32_t)t*KYBER_Q */
-    BN.RSHIFTVEC    w21, w20, 16    /* t = t >> 16 */
-
-    BN.AND          w21, w21, w3
-
-    /* compute tu = fqmul_simd(zeta32vec, rjlenupp16vec); */
-    BN.MULVEC       w10, w4, w8
-    BN.MULVEC32       w14, w10, w2
-    BN.MULVEC       w14, w14, w1
-    BN.SUBVEC       w10, w10, w14
-    BN.RSHIFTVEC    w10, w10, 16
-
-    BN.AND          w10, w10, w3
-    BN.LSHIFTVEC    w11, w10, 16
-
-    BN.XOR          w12, w11, w21
-
-    BN.SUBVEC       w13, w5, w12    /* rjlennew = _mm256_sub_epi16(rj16vec, t) */
-    BN.LSHI         w13, w0, w13 >> 128
-    BN.ADDVEC       w22, w5, w12
-    BN.AND          w22, w22, w24
-
-    BN.XOR          w12, w13, w22
-
-    /* r[j + len] = r[j] - t */
-    la         x1, r
-    add        x1, x1, x6
-    addi       x3, x0, 12
-    BN.SID     x3, 0(x1)
-    addi       x6, x6, 32
-
-/******************************************LEN=4*******************************************************/
-
-    /* Load mask with low 64 bits of each 128 bits set */
-    la         x1, len4mask
-    addi       x3, x0, 17
-    BN.LID     x3, 0(x1)
-
-    addi       x5, x0, 0         /* x5 : inner loop ctr */
-    addi       x6, x0, 0
-
-loopj_len4:
+loopj:
 
     /* load zeta and broadcast */
     la         x1, zetas         /* Load base address of zetas from memory */
@@ -283,7 +129,7 @@ loopj_len4:
 
     addi       x6, x6, 32
     addi       x5, x5, 1
-    bne        x5, x20, loopj_len4
+    bne        x5, x20, loopj
 
     /* load zeta and broadcast */
     la         x1, zetas         /* Load base address of zetas from memory */
@@ -371,8 +217,6 @@ loopj_len4:
     add        x1, x1, x6
     addi       x3, x0, 12
     BN.SID     x3, 0(x1)
-
-/*******************************************END*******************************************************/
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
@@ -496,6 +340,13 @@ end:
     .dword 0xffffffffffffffff
 
     .balign 32
+    len4mask:
+    .dword 0xffffffffffffffff
+    .dword 0x0
+    .dword 0xffffffffffffffff
+    .dword 0x0
+
+    .balign 32
     ropp:
     .dword 0xffffffffffff9d83  /* Q = 3329 */
     .dword 0xffffffffffffffff
@@ -529,13 +380,6 @@ end:
     .dword  0xffffffffffffffff  /* 32 set bits */
     .dword  0xffffffffffffffff
     .dword 0x0
-    .dword 0x0
-
-    .balign 32
-    len4mask:
-    .dword 0xffffffffffffffff
-    .dword 0x0
-    .dword 0xffffffffffffffff
     .dword 0x0
 
     .balign 32

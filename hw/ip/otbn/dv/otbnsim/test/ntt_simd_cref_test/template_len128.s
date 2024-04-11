@@ -18,18 +18,10 @@
     BN.LID     x3, 0(x1)         /* w3 has mask with the low 16 bits of each 32-bit word set only. correct */
 
     addi       x4, x0, 1         /* x4 : k */
-    addi       x20, x0, 8        /* x20: inner loop_j lim */
+    addi       x20, x0, 8        /* x20: inner looplim */
+    addi       x6, x0, 0         /* x6 : offset to next block */
     addi       x14, x0, 256      /* x14: len */
-    addi       x17, x0, 16        /* x17: loop_len lim */
-    addi       x25, x0, 512         /* lim start */
-
-looplen_mul16:
-
-    addi       x19, x0, 0        /* x19 : start */
-
-loopstart_mul16:
-
-    add        x6, x0, x19       /* x6 : offset to next block */
+    addi       x5, x0, 0         /* x5: loop ctr */
 
     /* load zeta and broadcast */
     la         x1, zetas         /* Load base address of zetas from memory */
@@ -46,9 +38,6 @@ loopstart_mul16:
     srl        x8, x8, x11
 
     BN.BROADCAST    w4, x8       /* broadcast zeta across w4 */
-
-    addi       x4, x4, 1         /* k++ */
-    addi       x5, x0, 0         /* x5: loop_j ctr */
 
 loopj_mul16:
 
@@ -107,14 +96,6 @@ loopj_mul16:
     addi       x6, x6, 32
     addi       x5, x5, 1
     bne        x5, x20, loopj_mul16
-
-    add        x19, x19, x14
-    add        x19, x19, x14
-    bne        x19, x25, loopstart_mul16
-
-    srli       x20, x20, 1
-    srli       x14, x14, 1            /* len >>= 1 */
-    bne        x14, x17, looplen_mul16
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */

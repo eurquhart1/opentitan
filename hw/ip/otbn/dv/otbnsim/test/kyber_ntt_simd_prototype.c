@@ -118,7 +118,7 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
   rjlennew = _mm256_set_epi64x(0, 0, 0, 0);
 
   k = 1;
-  for(len = 128; len >= 16; len >>= 1) {
+  /*for(len = 128; len >= 16; len >>= 1) {
     for(start = 0; start < 256; start = j + len) {
       zeta = zetas[k++];
       __m256i zeta32vec = _mm256_set1_epi32(zeta);
@@ -196,17 +196,30 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
         __m256i res = _mm256_xor_epi32(rjnew, rjlennew);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], res);
   }*/
-  /*int16_t tx;
-  len = 128;
-  for(start = 0; start < 256; start = j + len) {
+  k = 1;
+  int16_t tx;
+  for(len = 128; len >= 2; len >>= 1) {
+    for(start = 0; start < 256; start = j + len) {
       zeta = zetas[k++];
-      for(j = 0; j < 128; j++) {
+      for(j = start; j < start + len; j++) {
         tx = fqmul(zeta, arr_simd[j + len]);
         arr_simd[j + len] = arr_simd[j] - tx;
         arr_simd[j] = arr_simd[j] + tx;
       }
     }
-  /*len = 4;
+  }
+  /*k = 1;
+  int16_t tx;
+  len = 8;
+  for(start = 0; start < 256; start = j + len) {
+      zeta = zetas[k++];
+      for(j = start; j < start + len; j++) {
+        tx = fqmul(zeta, arr_simd[j + len]);
+        arr_simd[j + len] = arr_simd[j] - tx;
+        arr_simd[j] = arr_simd[j] + tx;
+      }
+    }
+  len = 4;
   for(start = 0; start < 256; start = j + len) {
       zeta = zetas[k++];
       for(j = start; j < start + len; j++) {

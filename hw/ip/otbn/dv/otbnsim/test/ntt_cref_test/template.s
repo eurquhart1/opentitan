@@ -360,6 +360,27 @@ end:
     .dword 0x0
 
     .balign 32
+    mask_128b:
+    .dword  0xffffffffffffffff  /* 32 set bits */
+    .dword  0xffffffffffffffff
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    len4mask:
+    .dword 0xffffffffffffffff
+    .dword 0x0
+    .dword 0xffffffffffffffff
+    .dword 0x0
+
+    .balign 32
+    len2mask:
+    .dword 0x00000000ffffffff
+    .dword 0x00000000ffffffff
+    .dword 0x00000000ffffffff
+    .dword 0x00000000ffffffff
+
+    .balign 32
     zeta:
     .word  0x0
     .word  0x0

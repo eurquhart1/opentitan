@@ -17,7 +17,10 @@
     addi       x3, x0, 3
     BN.LID     x3, 0(x1)         /* w3 has mask with the low 16 bits of each 32-bit word set only. correct */
 
-    addi       x4, x0, 1         /* x4 : k */
+    la         x1, mask_16b
+    lw         x26, 0(x1)
+
+    addi       x4, x0, 0         /* x4 : k */
     addi       x20, x0, 8        /* x20: inner loop_j lim */
     addi       x14, x0, 256      /* x14: len */
     addi       x17, x0, 16        /* x17: loop_len lim */
@@ -29,21 +32,13 @@
 
     /* load zeta and broadcast */
     la         x1, zetas         /* Load base address of zetas from memory */
-    srai       x7, x4, 1
-    slli       x7, x7, 2         /* x7 : k*2 ... offset to element in zetas */
-    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
-    lw         x8, 0(x2)         /* load word 32 bits */
-    and        x9, x4, 1         /* k mod 2 */
-    xor        x10, x9, 1        /* inverse */
-    slli       x11, x9, 4        /* shift idx left by 4 */
-    slli       x12, x10, 4
-    srl        x8, x8, x12
-    sll        x8, x8, x11
-    srl        x8, x8, x11
+    add        x2, x1, x4        /* x1 : base address of zetas plus offset to element */
+    lw         x28, 0(x2)         /* load word 32 bits */
+    and        x8, x28, x26
 
     BN.BROADCAST    w4, x8       /* broadcast zeta across w4 */
 
-    addi       x4, x4, 1         /* k++ */
+    addi       x4, x4, 4         /* k++ */
     addi       x5, x0, 0         /* x5: loop_j ctr */
 
 loopj_len128:
@@ -110,6 +105,8 @@ loopj_len128:
     srli       x20, x20, 1
     srli       x14, x14, 1            /* len >>= 1 */
 
+/************************************************LEN={64,32,16}****************************************************/
+
 looplen_mul16:
 
     addi       x19, x0, 0        /* x19 : start */
@@ -120,21 +117,14 @@ loopstart_mul16:
 
     /* load zeta and broadcast */
     la         x1, zetas         /* Load base address of zetas from memory */
-    srai       x7, x4, 1
-    slli       x7, x7, 2         /* x7 : k*2 ... offset to element in zetas */
-    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
-    lw         x8, 0(x2)         /* load word 32 bits */
-    and        x9, x4, 1         /* k mod 2 */
-    xor        x10, x9, 1        /* inverse */
-    slli       x11, x9, 4        /* shift idx left by 4 */
-    slli       x12, x10, 4
-    srl        x8, x8, x12
-    sll        x8, x8, x11
-    srl        x8, x8, x11
+    add        x2, x1, x4        /* x1 : base address of zetas plus offset to element */
+    lw         x28, 0(x2)         /* load word 32 bits */
+    srli       x8, x28, 16
+    add        x29, x8, x0
 
     BN.BROADCAST    w4, x8       /* broadcast zeta across w4 */
 
-    addi       x4, x4, 1         /* k++ */
+    addi       x4, x4, 4         /* k++ */
     addi       x5, x0, 0         /* x5: loop_j ctr */
 
 loopj_mul16:
@@ -202,22 +192,10 @@ loopj_mul16:
     add        x6, x0, x19       /* x6 : offset to next block */
 
     /* load zeta and broadcast */
-    la         x1, zetas         /* Load base address of zetas from memory */
-    srai       x7, x4, 1
-    slli       x7, x7, 2         /* x7 : k*2 ... offset to element in zetas */
-    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
-    lw         x8, 0(x2)         /* load word 32 bits */
-    and        x9, x4, 1         /* k mod 2 */
-    xor        x10, x9, 1        /* inverse */
-    slli       x11, x9, 4        /* shift idx left by 4 */
-    slli       x12, x10, 4
-    srl        x8, x8, x12
-    sll        x8, x8, x11
-    srl        x8, x8, x11
+    and        x8, x28, x26
 
     BN.BROADCAST    w4, x8       /* broadcast zeta across w4 */
 
-    addi       x4, x4, 1         /* k++ */
     addi       x5, x0, 0         /* x5: loop_j ctr */
 
 loopj_mul16b:

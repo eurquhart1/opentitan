@@ -52,28 +52,6 @@
       funct3: b000
       wrd: wrd
 
-- mnemonic: bn.crash
-  synopsis: crash
-  operands: *bn-add-operands
-  syntax: &bn-crash-syntax |
-    <wrd>, <wrs1>, <wrs2>[ <shift_type> <shift_bits>][, FG<flag_group>]
-  doc: |
-    wrd = (wrs1 + 5) * (wrs2 - 1)
-  errs: []
-  iflow:
-    - to: [wrd, flags-all]
-      from: [wrs1, wrs2]
-  encoding:
-    scheme: bnaf
-    mapping:
-      fg: flag_group
-      shift_type: shift_type
-      shift_bits: shift_bits
-      wrs2: wrs2
-      wrs1: wrs1
-      funct3: b111
-      wrd: wrd
-
 - mnemonic: bn.mulvec
   synopsis: Vectorized Multiply
   operands:
@@ -90,6 +68,32 @@
     <wrd>, <wrs1>, <wrs2>
   doc: |
     Performs a vectorized multiply operation across each 32-bit lane of the 256-bit registers.
+    The low 16 bits of each lane of `<wrs1>` is multiplied by the corresponding low 16 bits of each lane of `<wrs2>`, with the result stored in `<wrd>`.
+    Each multiplication is modulo 2^32.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs1, wrs2]
+  encoding:
+    scheme: bnv
+    mapping:
+      wrd: wrd
+      wrs1: wrs1
+      wrs2: wrs2
+      funct3: b100
+      funct7: b1111111
+
+
+- mnemonic: bn.mulvec32
+  synopsis: Vectorized Multiply
+  operands:
+    - *mulvec-wrd
+    - *mulvec-wrs1
+    - *mulvec-wrs2
+  syntax: |
+    <wrd>, <wrs1>, <wrs2>
+  doc: |
+    Performs a vectorized multiply operation across each 32-bit lane of the 256-bit registers.
     Each lane of `<wrs1>` is multiplied by the corresponding lane of `<wrs2>`, with the result stored in `<wrd>`.
     Each multiplication is modulo 2^32.
   errs: []
@@ -99,11 +103,11 @@
   encoding:
     scheme: bnv
     mapping:
-      wrd: wrd  # Destination register (5 bits to address 32 registers)
-      wrs1: wrs1 # First source register (5 bits to address 32 registers)
-      wrs2: wrs2  # Second source register (5 bits to address 32 registers)
+      wrd: wrd
+      wrs1: wrs1
+      wrs2: wrs2
       funct3: b100
-      funct7: b1111111
+      funct7: b1111110
 
 
 - mnemonic: bn.addvec
@@ -123,7 +127,7 @@
   doc: |
     Performs a vectorized addition operation across each 32-bit lane of the 256-bit registers.
     Each lane of `<wrs1>` is added to the corresponding lane of `<wrs2>`, with the result stored in `<wrd>`.
-    Each addition is modulo 2^32, meaning that overflow wraps around.
+    Each addition is modulo 2^32.
   errs: []
   iflow:
     - to: [wrd]
@@ -131,11 +135,11 @@
   encoding:
     scheme: bnv
     mapping:
-      wrd: wrd  # Destination register (5 bits to address 32 registers)
-      wrs1: wrs1 # First source register (5 bits to address 32 registers)
-      wrs2: wrs2  # Second source register (5 bits to address 32 registers)
-      funct3: b101  # Updated to differentiate from multiply
-      funct7: b1111111  # Could remain the same or change based on ISA design
+      wrd: wrd
+      wrs1: wrs1
+      wrs2: wrs2
+      funct3: b101
+      funct7: b1111111
 
 
 - mnemonic: bn.subvec
@@ -155,7 +159,7 @@
   doc: |
     Performs a vectorized subtraction operation across each 32-bit lane of the 256-bit registers.
     Each lane of `<wrs2>` is subtracted from the corresponding lane of `<wrs1>`, with the result stored in `<wrd>`.
-    Each addition is modulo 2^32, meaning that overflow wraps around.
+    Each addition is modulo 2^32.
   errs: []
   iflow:
     - to: [wrd]
@@ -163,43 +167,11 @@
   encoding:
     scheme: bnv
     mapping:
-      wrd: wrd  # Destination register (5 bits to address 32 registers)
-      wrs1: wrs1 # First source register (5 bits to address 32 registers)
-      wrs2: wrs2  # Second source register (5 bits to address 32 registers)
-      funct3: b110  # Updated to differentiate from add & multiply
-      funct7: b1111111  # Could remain the same or change based on ISA design
-
-
-- mnemonic: bn.andvec
-  synopsis: Vectorized AND
-  operands:
-    - &andvec-wrd
-      name: wrd
-      doc: Destination WDR.
-    - &andvec-wrs1
-      name: wrs1
-      doc: First source WDR.
-    - &andvec-wrs2
-      name: wrs2
-      doc: Second source WDR.
-  syntax: |
-    <wrd>, <wrs1>, <wrs2>
-  doc: |
-    Performs a vectorized bitwise AND operation across each 32-bit lane of the 256-bit registers.
-    Each lane of `<wrs1>` is ANDed with the corresponding lane of `<wrs2>`, with the result stored in `<wrd>`.
-    This operation is non-wrapping as it directly reflects the bitwise AND result.
-  errs: []
-  iflow:
-    - to: [wrd]
-      from: [wrs1, wrs2]
-  encoding:
-    scheme: bnv
-    mapping:
-      wrd: wrd  # Destination register (5 bits to address 32 registers)
-      wrs1: wrs1 # First source register (5 bits to address 32 registers)
-      wrs2: wrs2  # Second source register (5 bits to address 32 registers)
-      funct3: b110  # Updated to differentiate from add and multiply
-      funct7: b1111101  # Could remain the same or change based on ISA design
+      wrd: wrd
+      wrs1: wrs1
+      wrs2: wrs2
+      funct3: b110
+      funct7: b1111111
 
 
 - mnemonic: bn.rshiftvec
@@ -223,11 +195,11 @@
   encoding:
     scheme: bnvs
     mapping:
-      wrd: wrd # Destination register (5 bits to address 32 registers)
-      wrs: wrs # Source register (5 bits to address 32 registers)
-      imm: imm # Immediate value for shift amount (needs specific encoding)
+      wrd: wrd
+      wrs: wrs
+      imm: imm
       funct2: b10
-      funct7: b1111110 # Could remain the same or change based on ISA design
+      funct7: b1111110
 
 - mnemonic: bn.lshiftvec
   synopsis: Vectorized Left Shift
@@ -250,11 +222,11 @@
   encoding:
     scheme: bnvs
     mapping:
-      wrd: wrd # Destination register (5 bits to address 32 registers)
-      wrs: wrs # Source register (5 bits to address 32 registers)
-      imm: imm # Immediate value for shift amount (needs specific encoding)
+      wrd: wrd
+      wrs: wrs
+      imm: imm
       funct2: b10
-      funct7: b1111100 # Could remain the same or change based on ISA design
+      funct7: b1111100
 
 - mnemonic: bn.broadcast
   synopsis: Vectorized Broadcast
@@ -276,8 +248,8 @@
   encoding:
     scheme: bnb
     mapping:
-      wrd: wrd  # Destination register
-      grs: grs  # Source General Purpose Registe
+      wrd: wrd
+      grs: grs
       funct3: b110
       funct7: b1111011
 
@@ -823,9 +795,8 @@
       wrd: wrd # Destination register (5 bits to address 32 registers)
       wrs1: wrs1 # Source register (5 bits to address 32 registers)
       wrs2: wrs2
-      funct3: b111
+      funct2: b11
       imm: imm # Immediate value for shift amount (needs specific encoding)
-      funct2: b11 # Could remain the same or change based on ISA design
 
 - mnemonic: bn.sel
   synopsis: Flag Select

@@ -324,10 +324,9 @@ bnlshi:
   parents:
     - custom4
     - wdr3
-    - funct3
   fields:
-    imm: 31-27
-    funct2: 26-25
+    imm: 31-25,14
+    funct2: 13-12
 
 # Scheme for BN broadcast
 bnb:

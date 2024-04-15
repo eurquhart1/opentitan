@@ -22,15 +22,7 @@
     addi       x3, x0, 5
     BN.LID     x3, 0(x1)          /*  w5 should now contain 16-bit mask */
     la         x1, mask_16b
-    lw         x27, 0(x1)
-
-    la         x1, mask_16b
-    lw         x31, 0(x1)
-
-    /* Load 32-bit mask from memory */
-    la         x1, mask_32b
-    addi       x3, x0, 21
-    BN.LID     x3, 0(x1)          /*  w21 should now contain 32-bit mask */
+    lw         x31, 0(x1)         /* x31: 16-bit mask */
 
     /* Load 64-bit mask from memory */
     la         x1, mask_64b
@@ -38,7 +30,6 @@
     BN.LID     x3, 0(x1)          /*  w13 should now contain 64-bit mask */
 
     /* Set looping variables to constants while iteratively building */
-    addi       x7, x0, 0          /* x7 : k */
     addi       x8, x0, 128          /* x8 : len */
     addi       x25, x0, 256         /* lim start */
     addi       x15, x0, 1         /* lim len */
@@ -48,11 +39,10 @@
 
     /* Load zeta into x20 */
     la         x1, zetas         /* Load base address of zetas from memory */
-    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
-    lw         x30, 0(x2)         /* load word 32 bits */
+    lw         x30, 0(x1)         /* load word 32 bits */
     and        x20, x30, x31
 
-    addi       x7, x7, 4            /* k++ */
+    addi       x7, x0, 4            /* k++ */
 
     loop       x8, 101
     
@@ -71,7 +61,7 @@
     sll        x16, x16, x24
     srl        x16, x16, x24
 
-    sll        x28, x27, x24
+    sll        x28, x31, x24
     add        x29, x0, x26
     and        x26, x26, x28      /* isolate the opposite sub-block in position */
 
@@ -89,7 +79,7 @@
     sll        x19, x19, x17
     srl        x19, x19, x17
 
-    sll        x28, x27, x17
+    sll        x28, x31, x17
     add        x29, x0, x5
     and        x5, x5, x28
     
@@ -121,8 +111,6 @@
 
     BN.MULQACC.WO.Z  w10, w1.0, w2.0, 0     /* w1 = a */
 
-    /*BN.AND      w10, w10, w21*/
-
     BN.AND     w9, w5, w10         /*  (int16_t)a */
 
     BN.MULQACC.WO.Z  w3, w9.0, w4.0, 0     /* t = (int16_t)a * QINV */
@@ -152,7 +140,7 @@
     sub        x22, x19, x21
 
     /* construct the block for overwriting r[j + len] in memory */
-    sll        x28, x27, x23
+    sll        x28, x31, x23
     sll        x22, x22, x23
     and        x22, x22, x28
     xor        x3, x22, x26
@@ -172,7 +160,7 @@
     add        x22, x19, x21        /* 87 */
 
     /* construct the block for overwriting r[j] in memory */
-    sll        x28, x27, x18
+    sll        x28, x31, x18
     sll        x24, x22, x18
     and        x24, x24, x28
     xor        x18, x24, x5
@@ -194,12 +182,7 @@
 looplen:
     addi       x9, x0, 0          /* x9 : start */
 
-    /* loopi          1, 2 */
 loopstart:
-    jal        x0, body
-    /* nop */
-
-body:
     add        x11, x0, x9         /* x11 : j = start */
 
     /* Load zeta into x20 */
@@ -208,7 +191,7 @@ body:
     lw         x30, 0(x2)         /* load word 32 bits */
     srli       x20, x30, 16
 
-    addi       x7, x7, 2            /* k++ */
+    addi       x7, x7, 4            /* k++ */
 
     loop       x8, 102
     
@@ -227,7 +210,7 @@ body:
     sll        x16, x16, x24
     srl        x16, x16, x24
 
-    sll        x28, x27, x24
+    sll        x28, x31, x24
     add        x29, x0, x26
     and        x26, x26, x28      /* isolate the opposite sub-block in position */
 
@@ -245,7 +228,7 @@ body:
     sll        x19, x19, x17
     srl        x19, x19, x17
 
-    sll        x28, x27, x17
+    sll        x28, x31, x17
     add        x29, x0, x5
     and        x5, x5, x28
     
@@ -277,8 +260,6 @@ body:
 
     BN.MULQACC.WO.Z  w10, w1.0, w2.0, 0     /* w1 = a */
 
-    /*BN.AND      w10, w10, w21*/
-
     BN.AND     w9, w5, w10         /*  (int16_t)a */
 
     BN.MULQACC.WO.Z  w3, w9.0, w4.0, 0     /* t = (int16_t)a * QINV */
@@ -308,7 +289,7 @@ body:
     sub        x22, x19, x21
 
     /* construct the block for overwriting r[j + len] in memory */
-    sll        x28, x27, x23
+    sll        x28, x31, x23
     sll        x22, x22, x23
     and        x22, x22, x28
     xor        x3, x22, x26
@@ -328,7 +309,7 @@ body:
     add        x22, x19, x21
 
     /* construct the block for overwriting r[j] in memory */
-    sll        x28, x27, x18
+    sll        x28, x31, x18
     sll        x24, x22, x18
     and        x24, x24, x28
     xor        x18, x24, x5
@@ -352,8 +333,6 @@ body:
     /* Load zeta into x20 */
     and        x20, x30, x31
 
-    addi       x7, x7, 2            /* k++ */
-
     loop       x8, 102
     
     /* Load r[j + len] into x16 */
@@ -371,7 +350,7 @@ body:
     sll        x16, x16, x24
     srl        x16, x16, x24
 
-    sll        x28, x27, x24
+    sll        x28, x31, x24
     add        x29, x0, x26
     and        x26, x26, x28      /* isolate the opposite sub-block in position */
 
@@ -389,7 +368,7 @@ body:
     sll        x19, x19, x17
     srl        x19, x19, x17
 
-    sll        x28, x27, x17
+    sll        x28, x31, x17
     add        x29, x0, x5
     and        x5, x5, x28
     
@@ -421,8 +400,6 @@ body:
 
     BN.MULQACC.WO.Z  w10, w1.0, w2.0, 0     /* w1 = a */
 
-    /*BN.AND      w10, w10, w21*/
-
     BN.AND     w9, w5, w10         /*  (int16_t)a */
 
     BN.MULQACC.WO.Z  w3, w9.0, w4.0, 0     /* t = (int16_t)a * QINV */
@@ -452,7 +429,7 @@ body:
     sub        x22, x19, x21
 
     /* construct the block for overwriting r[j + len] in memory */
-    sll        x28, x27, x23
+    sll        x28, x31, x23
     sll        x22, x22, x23
     and        x22, x22, x28
     xor        x3, x22, x26
@@ -472,7 +449,7 @@ body:
     add        x22, x19, x21
 
     /* construct the block for overwriting r[j] in memory */
-    sll        x28, x27, x18
+    sll        x28, x31, x18
     sll        x24, x22, x18
     and        x24, x24, x28
     xor        x18, x24, x5

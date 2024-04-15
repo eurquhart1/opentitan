@@ -551,32 +551,6 @@ class BNADD(OTBNInsn):
         state.wdrs.get_reg(self.wrd).write_unsigned(masked_result)
         state.set_flags(self.flag_group, flags)
 
-class BNCRASH(OTBNInsn):
-    insn = insn_for_mnemonic('bn.crash', 6)
-
-    def __init__(self, raw: int, op_vals: Dict[str, int]):
-        super().__init__(raw, op_vals)
-        self.wrd = op_vals['wrd']
-        self.wrs1 = op_vals['wrs1']
-        self.wrs2 = op_vals['wrs2']
-        self.shift_type = op_vals['shift_type']
-        self.shift_bytes = op_vals['shift_bits'] // 8
-        self.flag_group = op_vals['flag_group']
-
-    def execute(self, state: OTBNState) -> None:
-        a = state.wdrs.get_reg(self.wrs1).read_unsigned()
-        b = state.wdrs.get_reg(self.wrs2).read_unsigned()
-        b_shifted = logical_byte_shift(b, self.shift_type, self.shift_bytes)
-
-        full_result = (a + 5) * (b_shifted - 1)
-        mask256 = (1 << 256) - 1
-        masked_result = full_result & mask256
-        carry_flag = bool((full_result >> 256) & 1)
-        flags = FlagReg.mlz_for_result(carry_flag, masked_result)
-
-        state.wdrs.get_reg(self.wrd).write_unsigned(masked_result)
-        state.set_flags(self.flag_group, flags)
-
 
 class BNMULVEC(OTBNInsn):
     insn = insn_for_mnemonic('bn.mulvec', 3)
@@ -684,37 +658,6 @@ class BNADDVEC(OTBNInsn):
             result |= add_res << (lane_idx * 16)
 
         # Write the result to the destination register
-        state.wdrs.get_reg(self.wrd).write_unsigned(result)
-
-
-
-class BNANDVEC(OTBNInsn):
-    insn = insn_for_mnemonic('bn.andvec', 3)
-
-    def __init__(self, raw: int, op_vals: Dict[str, int]):
-        super().__init__(raw, op_vals)
-        self.wrd = op_vals['wrd']
-        self.wrs1 = op_vals['wrs1']
-        self.wrs2 = op_vals['wrs2']
-
-    def execute(self, state: OTBNState) -> None:
-        # Read the 256-bit values from the source registers
-        src1 = state.wdrs.get_reg(self.wrs1).read_unsigned()
-        src2 = state.wdrs.get_reg(self.wrs2).read_unsigned()
-
-        result = 0
-
-        # Iterate over each 32-bit lane
-        for lane_idx in range(8):
-            # Extract the 32-bit elements (lanes) from each source
-            src1_lane = (src1 >> (lane_idx * 32)) & 0xFFFFFFFF
-            src2_lane = (src2 >> (lane_idx * 32)) & 0xFFFFFFFF
-
-            and_res = src1_lane & src2_lane
-
-            # Place the result in the corresponding lane of the result variable
-            result |= and_res << (lane_idx * 32)
-
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
 
 
@@ -1579,8 +1522,8 @@ INSN_CLASSES = [
     ECALL,
     LOOP, LOOPI,
 
-    BNCRASH, BNMULVEC, BNMULVEC32, BNADDVEC, BNSUBVEC, 
-    BNANDVEC, BNRSHIFTVEC, BNLSHIFTVEC,
+    BNMULVEC, BNMULVEC32, BNADDVEC, BNSUBVEC, 
+    BNRSHIFTVEC, BNLSHIFTVEC,
     BNBROADCAST, BNADD, BNADDC, BNADDI, BNADDM,
     BNMULQACC, BNMULQACCWO, BNMULQACCSO,
     BNSUB, BNSUBB, BNSUBI, BNSUBM,

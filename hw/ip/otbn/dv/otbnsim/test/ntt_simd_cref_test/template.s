@@ -20,7 +20,6 @@
     la         x1, mask_16b
     lw         x26, 0(x1)
 
-    addi       x4, x0, 0         /* x4 : k */
     addi       x20, x0, 8        /* x20: inner loop_j lim */
     addi       x14, x0, 256      /* x14: len */
     addi       x17, x0, 16        /* x17: loop_len lim */
@@ -38,7 +37,7 @@
 
     BN.BROADCAST    w4, x8       /* broadcast zeta across w4 */
 
-    addi       x4, x4, 4         /* k++ */
+    addi       x4, x0, 4         /* k++ */
     addi       x5, x0, 0         /* x5: loop_j ctr */
 
 loopj_len128:

@@ -198,7 +198,7 @@ int16_t* ntt_simd(int16_t arr_simd[256]) {
   }*/
   k = 1;
   int16_t tx;
-  for(len = 128; len >= 4; len >>= 1) {
+  for(len = 128; len >= 2; len >>= 1) {
     for(start = 0; start < 256; start = j + len) {
       zeta = zetas[k++];
       for(j = start; j < start + len; j++) {

@@ -24,6 +24,9 @@
     la         x1, mask_16b
     lw         x27, 0(x1)
 
+    la         x1, mask_16b
+    lw         x31, 0(x1)
+
     /* Load 32-bit mask from memory */
     la         x1, mask_32b
     addi       x3, x0, 21
@@ -35,7 +38,7 @@
     BN.LID     x3, 0(x1)          /*  w13 should now contain 64-bit mask */
 
     /* Set looping variables to constants while iteratively building */
-    addi       x7, x0, 1          /* x7 : k */
+    addi       x7, x0, 0          /* x7 : k */
     addi       x8, x0, 128          /* x8 : len */
     addi       x25, x0, 256         /* lim start */
     addi       x15, x0, 1         /* lim len */
@@ -44,20 +47,12 @@
     add        x11, x0, x9         /* x11 : j = start */
 
     /* Load zeta into x20 */
-    la         x1, zetas              /* Load base address of zetas from memory */
-    srai       x13, x7, 1
-    slli       x13, x13, 2        /* x13 : k*2 ... offset to element in zetas */
-    add        x2, x1, x13        /* x1 : base address of zetas plus offset to element */
-    lw         x20, 0(x2)         /* load word 32 bits */
-    and        x18, x7, 1        /* k mod 2 */
-    xor        x17, x18, 1        /* inverse */
-    slli       x23, x18, 4        /* shift idx left by 4 */
-    slli       x24, x17, 4
-    srl        x20, x20, x24
-    sll        x20, x20, x23
-    srl        x20, x20, x23
+    la         x1, zetas         /* Load base address of zetas from memory */
+    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
+    lw         x30, 0(x2)         /* load word 32 bits */
+    and        x20, x30, x31
 
-    addi       x7, x7, 1            /* k++ */
+    addi       x7, x7, 2            /* k++ */
 
     loop       x8, 101
     

@@ -52,7 +52,7 @@
     lw         x30, 0(x2)         /* load word 32 bits */
     and        x20, x30, x31
 
-    addi       x7, x7, 2            /* k++ */
+    addi       x7, x7, 4            /* k++ */
 
     loop       x8, 101
     
@@ -203,20 +203,12 @@ body:
     add        x11, x0, x9         /* x11 : j = start */
 
     /* Load zeta into x20 */
-    la         x1, zetas              /* Load base address of zetas from memory */
-    srai       x13, x7, 1
-    slli       x13, x13, 2        /* x13 : k*2 ... offset to element in zetas */
-    add        x2, x1, x13        /* x1 : base address of zetas plus offset to element */
-    lw         x20, 0(x2)         /* load word 32 bits */
-    and        x18, x7, 1        /* k mod 2 */
-    xor        x17, x18, 1        /* inverse */
-    slli       x23, x18, 4        /* shift idx left by 4 */
-    slli       x24, x17, 4
-    srl        x20, x20, x24
-    sll        x20, x20, x23
-    srl        x20, x20, x23
+    la         x1, zetas         /* Load base address of zetas from memory */
+    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
+    lw         x30, 0(x2)         /* load word 32 bits */
+    srli       x20, x30, 16
 
-    addi       x7, x7, 1            /* k++ */
+    addi       x7, x7, 2            /* k++ */
 
     loop       x8, 102
     
@@ -358,20 +350,9 @@ body:
     add        x11, x0, x9         /* x11 : j = start */
 
     /* Load zeta into x20 */
-    la         x1, zetas              /* Load base address of zetas from memory */
-    srai       x13, x7, 1
-    slli       x13, x13, 2        /* x13 : k*2 ... offset to element in zetas */
-    add        x2, x1, x13        /* x1 : base address of zetas plus offset to element */
-    lw         x20, 0(x2)         /* load word 32 bits */
-    and        x18, x7, 1        /* k mod 2 */
-    xor        x17, x18, 1        /* inverse */
-    slli       x23, x18, 4        /* shift idx left by 4 */
-    slli       x24, x17, 4
-    srl        x20, x20, x24
-    sll        x20, x20, x23
-    srl        x20, x20, x23
+    and        x20, x30, x31
 
-    addi       x7, x7, 1            /* k++ */
+    addi       x7, x7, 2            /* k++ */
 
     loop       x8, 102
     

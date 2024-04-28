@@ -239,18 +239,18 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
       }
   }*/
   
-  j=0;
+  start = 0;
+  len = 128;
   //for(len = 16; len <= 128; len <<= 1) {
     //for(start = 0; start < 256; start = j + len) {
       //zeta = zetas[k--];
       //zeta32vec = _mm256_set1_epi32(zeta);
-      //for(j = start; j < start + len; j+=16) {
+      for(j = start; j < start + len; j+=16) {
         rj16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j]);
-        /*rjlen16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j + len]);
-        barrett_arg = _mm256_add_epi16(rj16vec, rjlen16vec);*/
-        //rj16vec_new = barrett_reduce_simd(barrett_arg);
-        rj16vec_new = barrett_reduce_simd(rj16vec);
-        /*rjlen16vec_tmp = _mm256_sub_epi16(rjlen16vec, rj16vec);
+        rjlen16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j + len]);
+        barrett_arg = _mm256_add_epi16(rj16vec, rjlen16vec);
+        rj16vec_new = barrett_reduce_simd(barrett_arg);
+        rjlen16vec_tmp = _mm256_sub_epi16(rjlen16vec, rj16vec);
 
         rjlenlow16vec = _mm256_slli_epi32(rjlen16vec_tmp, 16);
         rjlenlow16vec = _mm256_srai_epi32(rjlenlow16vec, 16);
@@ -263,12 +263,12 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
         tu = _mm256_and_si256(tu, masklow16);
 
         tu = _mm256_slli_epi32(tu, 16);
-        rjlen16vec_new = _mm256_xor_epi32(tl, tu);*/
+        rjlen16vec_new = _mm256_xor_epi32(tl, tu);
 
         //_mm256_storeu_si256((__m256i*)&arr_simd[j], rj16vec_new);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], rj16vec_new);
-        //_mm256_storeu_si256((__m256i*)&arr_simd[j + len], rjlen16vec_new);
-      //}
+        _mm256_storeu_si256((__m256i*)&arr_simd[j + len], rjlen16vec_tmp);
+      }
     //}
   //}
 

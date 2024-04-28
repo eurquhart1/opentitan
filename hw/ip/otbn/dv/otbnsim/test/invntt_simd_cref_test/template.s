@@ -30,7 +30,7 @@
     addi       x4, x0, 127         /* x4 : k */
     addi       x20, x0, 8        /* x20: inner looplim */
     addi       x6, x0, 0         /* x6 : offset to next block */
-    addi       x14, x0, 4      /* x14: len */
+    addi       x14, x0, 256      /* x14: len(*2) */
     addi       x5, x0, 0         /* x5: loop ctr */
 
     /* load zeta and broadcast */
@@ -54,12 +54,23 @@ loopj_mul16:
     /* Load r[j] */
     la         x1, r
     add        x1, x1, x6
-    addi       x3, x0, 6
-    BN.LID     x3, 0(x1)         /* r[j] elements are in w6 */
+    addi       x3, x0, 12
+    BN.LID     x3, 0(x1)         /* r[j] elements are in w12 */
+
+    /* Load r[j + len] */
+    la         x1, r
+    add        x1, x1, x6
+    add        x1, x1, x14
+    addi       x3, x0, 5
+    BN.LID     x3, 0(x1)         /* r[j + len] elements are in w5 */
+
+    BN.ADDVEC       w6, w12, w5   /* w6: rjvec + rjlenvec (barrett arg) */
 
     BN.LSHIFTVEC    w7, w6, 16
     BN.RSHIFTVEC    w7, w7, 16   /* w7: rjlow16vec */
     BN.RSHIFTVEC    w8, w6, 16   /* w8: rjupp16vec */
+
+    /* barrett reduction */
 
     /* barrett reduction for tl */
     BN.MULVEC       w21, w7, w30     /* rjlow16vec*v_vec */
@@ -80,15 +91,26 @@ loopj_mul16:
     BN.XOR          w22, w11, w21
     BN.SUBVEC       w22, w6, w22
 
-    /* r[j] = r[j] + t */
+    /* full barrett reduction done */
+
+    BN.SUBVEC       w5, w5, w12  /* w5: r[j+len] - t */
+
+    /* r[j] */
     la         x1, r
     add        x1, x1, x6
     addi       x3, x0, 22
     BN.SID     x3, 0(x1)
 
+    /* r[j + len] */
+    la         x1, r
+    add        x1, x1, x6
+    add        x1, x1, x14
+    addi       x3, x0, 5
+    BN.SID     x3, 0(x1)
+
     addi       x6, x6, 32
     addi       x5, x5, 1
-    /*bne        x5, x20, loopj_mul16*/
+    bne        x5, x20, loopj_mul16
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */

@@ -374,6 +374,8 @@ int main() {
   // broadcast constants into 32-bit lanes
   kyberq_vec = _mm256_set1_epi16(KYBER_Q);
   v_vec = _mm256_set1_epi16(v);
+  printf("v: %d", v);
+  exit(0);
 
   // create a mask with the low 16 bits of each 32-bit lane set
   masklow16 = _mm256_set1_epi32(0xFFFF);

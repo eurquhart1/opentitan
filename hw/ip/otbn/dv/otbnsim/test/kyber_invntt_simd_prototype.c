@@ -136,6 +136,11 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
   qinv32vec = _mm256_set1_epi32(QINV);
   kyberq32vec = _mm256_set1_epi32(KYBER_Q);
   fvec = _mm256_set1_epi32(f);
+  masklow16 = _mm256_set1_epi32(0xFFFF);
+  mask_low_4_els = _mm256_set_epi64x(0, 0, 0, -1);
+  mask_upp_8_els = _mm256_set_epi64x(-1, -1, 0, 0);
+  mask_low_2_els = _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, -1);
+  mask_upp_12_els = _mm256_set_epi32(-1, -1, -1, -1, -1, -1, 0, 0);
 
   k = 127;
   /*len = 2;
@@ -243,8 +248,8 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
   len = 128;
   //for(len = 16; len <= 128; len <<= 1) {
     //for(start = 0; start < 256; start = j + len) {
-      //zeta = zetas[k--];
-      //zeta32vec = _mm256_set1_epi32(zeta);
+      zeta = zetas[k--];
+      zeta32vec = _mm256_set1_epi32(zeta);
       for(j = start; j < start + len; j+=16) {
         rj16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j]);
         rjlen16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j + len]);
@@ -265,9 +270,8 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
         tu = _mm256_slli_epi32(tu, 16);
         rjlen16vec_new = _mm256_xor_epi32(tl, tu);
 
-        //_mm256_storeu_si256((__m256i*)&arr_simd[j], rj16vec_new);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], rj16vec_new);
-        _mm256_storeu_si256((__m256i*)&arr_simd[j + len], rjlen16vec_tmp);
+        _mm256_storeu_si256((__m256i*)&arr_simd[j + len], rjlen16vec_new);
       }
     //}
   //}

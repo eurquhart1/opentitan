@@ -4,23 +4,19 @@
 #include <immintrin.h> // Include for AVX/AVX2 intrinsics
 #include <stdbool.h>
 #include <inttypes.h> // For PRIx16
-#include <emmintrin.h>  // Include for SSE2 intrinsics
 
 #define KYBER_Q 3329
-#define QINV -3327 // q^-1 mod 2^16
+#define QINV 62209 // q^-1 mod 2^16 (32-bit representation)
 const int16_t v = ((1 << 26) + KYBER_Q / 2) / KYBER_Q;
 
-int16_t arr_reg[256];
-int16_t arr_simd[256];
-
-__m256i qinv32vec, kyberq32vec, fvec;
-__m256i kyberq_vec, v_vec;
+__m256i qinv32vec;
+__m256i kyberq32vec;
 __m256i masklow16, maskupp16, mask_low_4_els, mask_upp_8_els, mask_low_2_els, mask_upp_12_els;
 
 /* 
  * Instructions for running:
- * ~/opentitan/hw/ip/otbn/dv/otbnsim/test$ gcc -march=native kyber_invntt_simd.c -o kyber_invntt_simd
- * ~/opentitan/hw/ip/otbn/dv/otbnsim/test$ ./kyber_invntt_simd
+ * ~/opentitan/hw/ip/otbn/dv/otbnsim/test$ gcc -march=native kyber_ntt_simd.c -o kyber_ntt_simd
+ * ~/opentitan/hw/ip/otbn/dv/otbnsim/test$ ./kyber_ntt_simd
  */
 
 const int16_t zetas[128] = {
@@ -72,30 +68,6 @@ void print_m256i_epi32(__m256i vec) {
     printf("\n");
 }
 
-/********************************************/
-
-int16_t montgomery_reduce(int32_t a)
-{
-  int16_t t;
-  t = (int16_t)a*QINV;
-  t = (a - (int32_t)t*KYBER_Q)>>16;
-  return t;
-}
-
-
-int16_t barrett_reduce(int16_t a) {
-  int16_t t;
-  const int16_t v = ((1<<26) + KYBER_Q/2)/KYBER_Q;
-
-  t  = ((int32_t)v*a + (1<<25)) >> 26;
-  t *= KYBER_Q;
-  return a - t;
-}
-
-static int16_t fqmul(int16_t a, int16_t b) {
-  return montgomery_reduce((int32_t)a*b);
-}
-
 __m256i montgomery_reduce_simd(__m256i a)
 {
   __m256i t;
@@ -107,6 +79,11 @@ __m256i montgomery_reduce_simd(__m256i a)
   t = _mm256_sub_epi32(a, t);
   t = _mm256_srai_epi32(t, 16); // Shift right arithmetic by 16 bits*/
   return t;
+}
+
+static __m256i fqmul_simd(__m256i a, __m256i b) {
+  __m256i inp = _mm256_mullo_epi32(a, b);
+  return montgomery_reduce_simd(inp);
 }
 
 __m256i simd_multiply_add_shift(__m256i v, __m256i a) {
@@ -142,50 +119,26 @@ __m256i simd_multiply_add_shift(__m256i v, __m256i a) {
 }
 
 __m256i barrett_reduce_simd(__m256i a) {
+  // broadcast constants into 32-bit lanes
+    __m256i kyberq_vec = _mm256_set1_epi16(KYBER_Q);
+    __m256i v_vec = _mm256_set1_epi16(v);
     __m256i t = simd_multiply_add_shift(v_vec, a);
     __m256i t_mul_q = _mm256_mullo_epi16(t, kyberq_vec);
     __m256i result = _mm256_sub_epi16(a, t_mul_q);
     return result;
 }
 
-static __m256i fqmul_simd(__m256i a, __m256i b) {
-  __m256i inp = _mm256_mullo_epi32(a, b);
-  return montgomery_reduce_simd(inp);
-}
-
-void invntt() {
+int16_t* invntt_simd(int16_t arr_simd[256]) {
   unsigned int start, len, j, k;
   int16_t t, zeta;
   const int16_t f = 1441; // mont^2/128
-
-  k = 127;
-  for(len = 2; len <= 128; len <<= 1) {
-    for(start = 0; start < 256; start = j + len) {
-      zeta = zetas[k--];
-      for(j = start; j < start + len; j++) {
-        t = arr_reg[j];
-        arr_reg[j] = barrett_reduce(t + arr_reg[j+len]);
-        arr_reg[j + len] = arr_reg[j + len] - t;
-        arr_reg[j + len] = fqmul(zeta, arr_reg[j + len]);
-      }
-    }
-  }
-
-  for(j = 0; j < 256; j++)
-    arr_reg[j] = fqmul(arr_reg[j], f);
-}
-
-void invntt_simd() {
-  unsigned int start, len, j, k;
-  int16_t t, zeta;
-  const int16_t f = 1441; // mont^2/128
-  __m256i tl, tu, rj16vec, rj16vec_new, rjlow16vec, zeta32vec, rjlen16vec, barrett_arg, rjlen16vec_tmp, rjlenlow16vec, rjlenupp16vec, rjlen16vec_new;
+  __m256i fvec, tl, tu, rj16vec, rj16vec_new, rjlow16vec, zeta32vec, rjlen16vec, barrett_arg, rjlen16vec_tmp, rjlenlow16vec, rjlenupp16vec, rjlen16vec_new;
   qinv32vec = _mm256_set1_epi32(QINV);
   kyberq32vec = _mm256_set1_epi32(KYBER_Q);
   fvec = _mm256_set1_epi32(f);
 
   k = 127;
-  len = 2;
+  /*len = 2;
   for(start = 0; start < 256; start += 2*len) {
       zeta = zetas[k--];
       __m256i zeta32vec = _mm256_set1_epi32(zeta);
@@ -284,18 +237,20 @@ void invntt_simd() {
         __m256i res = _mm256_xor_epi32(rj16vec_new, rjlen16vec_new);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], res);
       }
-  }
+  }*/
   
-  for(len = 16; len <= 128; len <<= 1) {
-    for(start = 0; start < 256; start = j + len) {
-      zeta = zetas[k--];
-      zeta32vec = _mm256_set1_epi32(zeta);
-      for(j = start; j < start + len; j+=16) {
+  j=0;
+  //for(len = 16; len <= 128; len <<= 1) {
+    //for(start = 0; start < 256; start = j + len) {
+      //zeta = zetas[k--];
+      //zeta32vec = _mm256_set1_epi32(zeta);
+      //for(j = start; j < start + len; j+=16) {
         rj16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j]);
-        rjlen16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j + len]);
-        barrett_arg = _mm256_add_epi16(rj16vec, rjlen16vec);
-        rj16vec_new = barrett_reduce_simd(barrett_arg);
-        rjlen16vec_tmp = _mm256_sub_epi16(rjlen16vec, rj16vec);
+        /*rjlen16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j + len]);
+        barrett_arg = _mm256_add_epi16(rj16vec, rjlen16vec);*/
+        //rj16vec_new = barrett_reduce_simd(barrett_arg);
+        rj16vec_new = barrett_reduce_simd(rj16vec);
+        /*rjlen16vec_tmp = _mm256_sub_epi16(rjlen16vec, rj16vec);
 
         rjlenlow16vec = _mm256_slli_epi32(rjlen16vec_tmp, 16);
         rjlenlow16vec = _mm256_srai_epi32(rjlenlow16vec, 16);
@@ -308,15 +263,16 @@ void invntt_simd() {
         tu = _mm256_and_si256(tu, masklow16);
 
         tu = _mm256_slli_epi32(tu, 16);
-        rjlen16vec_new = _mm256_xor_epi32(tl, tu);
+        rjlen16vec_new = _mm256_xor_epi32(tl, tu);*/
 
+        //_mm256_storeu_si256((__m256i*)&arr_simd[j], rj16vec_new);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], rj16vec_new);
-        _mm256_storeu_si256((__m256i*)&arr_simd[j + len], rjlen16vec_new);
-      }
-    }
-  }
+        //_mm256_storeu_si256((__m256i*)&arr_simd[j + len], rjlen16vec_new);
+      //}
+    //}
+  //}
 
-  for (j=0; j<256; j+=16) {
+  /*for (j=0; j<256; j+=16) {
     rj16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j]);
     
     rjlow16vec = _mm256_slli_epi32(rj16vec, 16);
@@ -333,63 +289,6 @@ void invntt_simd() {
     __m256i rj16vec_new = _mm256_xor_epi32(tl, tu);
 
     _mm256_storeu_si256((__m256i*)&arr_simd[j], rj16vec_new);
-  }
-
-}
-
-bool arraysAreEqual(int16_t *arr1, int16_t *arr2) {
-    bool isEqual = true;
-    int size = 256;
-
-    for (int i = 0; i < size; i++) {
-        if (arr1[i] != arr2[i]) {
-            isEqual = false; // Mark as not equal but continue checking to print all elements
-            break; // Exit the loop as soon as a difference is found
-        }
-    }
-
-    if (!isEqual) {
-        printf("The arrays are not equal. Here are their elements:\n");
-        printf("Array 1: ");
-        for (int i = 0; i < size; i++) {
-            printf("%d ", arr1[i]);
-        }
-        printf("\nArray 2: ");
-        for (int i = 0; i < size; i++) {
-            printf("%d ", arr2[i]);
-        }
-        printf("\n");
-    }
-
-    return isEqual;
-}
-
-int main() {
-  // Initialize array elements
-    for(int i = 0; i < 256; i++) {
-        arr_reg[i] = i; // Assign each element its index as value
-        arr_simd[i] = i;
-    }
-
-  // broadcast constants into 32-bit lanes
-  kyberq_vec = _mm256_set1_epi16(KYBER_Q);
-  v_vec = _mm256_set1_epi16(v);
-
-  // create a mask with the low 16 bits of each 32-bit lane set
-  masklow16 = _mm256_set1_epi32(0xFFFF);
-  mask_low_4_els = _mm256_set_epi64x(0, 0, 0, -1);
-  mask_upp_8_els = _mm256_set_epi64x(-1, -1, 0, 0);
-  mask_low_2_els = _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, -1);
-  mask_upp_12_els = _mm256_set_epi32(-1, -1, -1, -1, -1, -1, 0, 0);
-
-  invntt();
-  invntt_simd();
-  
-  if (arraysAreEqual(arr_reg, arr_simd)) {
-        printf("The arrays are equal.\n");
-    } else {
-        printf("The arrays are not equal.\n");
-    }
-
-  return 0;
+  }*/
+  return arr_simd;
 }

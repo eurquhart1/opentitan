@@ -142,6 +142,32 @@
       funct7: b1111111
 
 
+- mnemonic: bn.addvec32
+  synopsis: Vectorized Add
+  operands:
+    - *addvec-wrd
+    - *addvec-wrs1
+    - *addvec-wrs2
+  syntax: |
+    <wrd>, <wrs1>, <wrs2>
+  doc: |
+    Performs a vectorized addition operation across each 32-bit lane of the 256-bit registers.
+    Each lane of `<wrs1>` is added to the corresponding lane of `<wrs2>`, with the result stored in `<wrd>`.
+    Each addition is modulo 2^32.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs1, wrs2]
+  encoding:
+    scheme: bnv
+    mapping:
+      wrd: wrd
+      wrs1: wrs1
+      wrs2: wrs2
+      funct3: b100
+      funct7: b1111101
+
+
 - mnemonic: bn.subvec
   synopsis: Vectorized Subtract
   operands:
@@ -200,6 +226,27 @@
       imm: imm
       funct2: b10
       funct7: b1111110
+
+- mnemonic: bn.arshiftvec
+  synopsis: Vectorized Arithmetic Right Shift
+  operands:
+    - *rshiftvec-wrd
+    - *rshiftvec-wrs
+    - *rshiftvec-imm
+  syntax: <wrd>, <wrs>, <imm>
+  doc: Performs a vectorized logical right shift operation across each 32-bit lane of the 256-bit register `<wrs>`. Each lane is shifted right by the number of bits specified in `<imm>`, with zeros shifted into the vacated bit positions. The result is stored in `<wrd>`.
+  errs: []
+  iflow:
+    - to: [wrd]
+      from: [wrs]
+  encoding:
+    scheme: bnvs
+    mapping:
+      wrd: wrd
+      wrs: wrs
+      imm: imm
+      funct2: b10
+      funct7: b1111101
 
 - mnemonic: bn.lshiftvec
   synopsis: Vectorized Left Shift

@@ -20,6 +20,11 @@
     /* Load v_vec into w30 */
     la         x1, v_vec
     addi       x3, x0, 30
+    BN.LID     x3, 0(x1)
+
+    /* Load barrett_add_vec into w31 */
+    la         x1, barrett_add_vec
+    addi       x3, x0, 31
     BN.LID     x3, 0(x1) 
 
     addi       x4, x0, 127         /* x4 : k */
@@ -56,17 +61,24 @@ loopj_mul16:
     BN.RSHIFTVEC    w7, w7, 16   /* w7: rjlow16vec */
     BN.RSHIFTVEC    w8, w6, 16   /* w8: rjupp16vec */
 
-    /* compute tl = fqmul_simd(zeta32vec, rjlenlow16vec); */
+    /* barrett reduction for tl */
     BN.MULVEC       w21, w7, w30     /* rjlow16vec*v_vec */
+    BN.ADDVEC       w21, w21, w31    /* (rjlow16vec*v_vec) + (1<<25) */
+    BN.ARSHIFTVEC    w21, w21, 26
+    BN.MULVEC       w21, w21, w1
 
     BN.AND          w21, w21, w3
 
-    /* compute tu = fqmul_simd(zeta32vec, rjlenupp16vec); */
+    /* barrett reduction for tu */
     BN.MULVEC       w10, w8, w30
+    BN.ADDVEC       w10, w10, w31    /* (rjlow16vec*v_vec) + (1<<25) */
+    BN.ARSHIFTVEC    w10, w10, 26
+    BN.MULVEC       w10, w10, w1
 
     BN.AND          w10, w10, w3
     BN.LSHIFTVEC    w11, w10, 16
     BN.XOR          w22, w11, w21
+    BN.SUBVEC       w22, w6, w22
 
     /* r[j] = r[j] + t */
     la         x1, r
@@ -265,3 +277,10 @@ end:
     .dword 0x00004ebf00004ebf
     .dword 0x00004ebf00004ebf
     .dword 0x00004ebf00004ebf
+
+    .balign 32
+    barrett_add_vec:
+    .dword 0x0200000002000000
+    .dword 0x0200000002000000
+    .dword 0x0200000002000000
+    .dword 0x0200000002000000

@@ -668,7 +668,6 @@ class BNADDVEC(OTBNInsn):
 
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
 
-
 ##
 # Instruction which performs a vectorized subtraction operation on each 16-bit
 # lane of two 256-bit source WDR registers. This instruction performs subtraction
@@ -737,6 +736,39 @@ class BNRSHIFTVEC(OTBNInsn):
             result |= rshift_res << (lane_idx * 32)
 
         state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
+
+class BNARSHIFTVEC(OTBNInsn):
+    insn = insn_for_mnemonic('bn.arshiftvec', 3)
+
+    def __init__(self, raw: int, op_vals: Dict[str, int]):
+        super().__init__(raw, op_vals)
+        self.wrd = op_vals['wrd']
+        self.wrs = op_vals['wrs']
+        self.imm = op_vals['imm']  # shift amount (bits)
+
+    def execute(self, state: OTBNState) -> None:
+        src = state.wdrs.get_reg(self.wrs).read_unsigned()
+
+        result = 0
+
+        # Iterate over each 32-bit lane
+        for lane_idx in range(8):
+            # Extract the 32-bit element from the source lane
+            src_lane = (src >> (lane_idx * 32)) & 0xFFFFFFFF
+
+            # Check if the source lane is negative (most significant bit is 1)
+            if src_lane & 0x80000000:
+                mask = (2 ** 32 - 1) << (32 - self.imm) if self.imm < 32 else 0xFFFFFFFF
+                arshift_res = ((src_lane >> self.imm) | mask) & 0xFFFFFFFF
+            else:
+                arshift_res = src_lane >> self.imm
+
+            # Concatenate the results from the different lanes
+            result |= arshift_res << (lane_idx * 32)
+
+        state.wdrs.get_reg(self.wrd).write_unsigned(result)
+
 
 
 ##
@@ -1537,7 +1569,7 @@ INSN_CLASSES = [
     LOOP, LOOPI,
 
     BNMULVEC, BNMULVEC32, BNADDVEC, BNSUBVEC, 
-    BNRSHIFTVEC, BNLSHIFTVEC,
+    BNRSHIFTVEC, BNLSHIFTVEC, BNARSHIFTVEC,
     BNBROADCAST, BNADD, BNADDC, BNADDI, BNADDM,
     BNMULQACC, BNMULQACCWO, BNMULQACCSO,
     BNSUB, BNSUBB, BNSUBI, BNSUBM,

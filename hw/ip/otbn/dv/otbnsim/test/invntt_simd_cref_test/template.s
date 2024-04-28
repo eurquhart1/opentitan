@@ -1,5 +1,3 @@
-/* The input placeholders will be overwritten by the actual input values */
-
 .text
 
     /* Load Q from memory */
@@ -25,31 +23,37 @@
     /* Load barrett_add_vec into w31 */
     la         x1, barrett_add_vec
     addi       x3, x0, 31
-    BN.LID     x3, 0(x1) 
+    BN.LID     x3, 0(x1)
+    
+    la         x1, mask_16b
+    lw         x26, 0(x1)
 
-    addi       x4, x0, 127         /* x4 : k */
+    addi       x4, x0, 252         /* x4 : k */
     addi       x20, x0, 8        /* x20: inner looplim */
     addi       x6, x0, 0         /* x6 : offset to next block */
     addi       x14, x0, 256      /* x14: len(*2) */
     addi       x5, x0, 0         /* x5: loop ctr */
 
+    addi       x17, x0, 16        /* x17: loop_len lim */
+    addi       x25, x0, 512         /* lim start */
+    addi       x21, x0, 4
+
+/************************************************LEN=128****************************************************/
+
+    add        x6, x0, 0       /* x6 : offset to next block */
+
     /* load zeta and broadcast */
     la         x1, zetas         /* Load base address of zetas from memory */
-    srai       x7, x4, 1
-    slli       x7, x7, 2         /* x7 : k*2 ... offset to element in zetas */
-    add        x2, x1, x7        /* x1 : base address of zetas plus offset to element */
-    lw         x8, 0(x2)         /* load word 32 bits */
-    and        x9, x4, 1         /* k mod 2 */
-    xor        x10, x9, 1        /* inverse */
-    slli       x11, x9, 4        /* shift idx left by 4 */
-    slli       x12, x10, 4
-    srl        x8, x8, x12
-    sll        x8, x8, x11
-    srl        x8, x8, x11
+    add        x2, x1, x4        /* x1 : base address of zetas plus offset to element */
+    lw         x28, 0(x2)         /* load word 32 bits */
+    and        x8, x28, x26
 
     BN.BROADCAST    w4, x8       /* broadcast zeta across w4 */
 
-loopj_mul16:
+    addi       x4, x0, 248         /* k++ */
+    addi       x5, x0, 0         /* x5: loop_j ctr */
+
+loopj_len128:
 
     /* Load r[j] */
     la         x1, r
@@ -133,7 +137,14 @@ loopj_mul16:
 
     addi       x6, x6, 32
     addi       x5, x5, 1
-    bne        x5, x20, loopj_mul16
+    bne        x5, x20, loopj_len128
+
+    add        x19, x19, x14
+    add        x19, x19, x14
+
+    srli       x20, x20, 1
+    srli       x14, x14, 1            /* len >>= 1 */
+
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
@@ -265,8 +276,7 @@ end:
 
     .balign 32
     qinv:
-    .word  0xf301  /* -3327 in 32-bit two's complement */
-    .word  0x0
+    .dword  0xfffff301  /* -3327 in 32-bit two's complement */
     .dword 0x0
     .dword 0x0
     .dword 0x0
@@ -288,9 +298,31 @@ end:
 
     .balign 32
     mask_64b:
-    .dword  0xffffffffffff0000  /* 32 set bits */
+    .dword  0xffffffffffffffff  /* 64 set bits */
+    .dword  0x0
     .dword 0x0
     .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    mask_128b:
+    .dword  0xffffffffffffffff  /* 32 set bits */
+    .dword  0xffffffffffffffff
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    len2mask:
+    .dword 0x00000000ffffffff
+    .dword 0x00000000ffffffff
+    .dword 0x00000000ffffffff
+    .dword 0x00000000ffffffff
+
+    .balign 32
+    len4mask:
+    .dword 0xffffffffffffffff
+    .dword 0x0
+    .dword 0xffffffffffffffff
     .dword 0x0
 
     .balign 32

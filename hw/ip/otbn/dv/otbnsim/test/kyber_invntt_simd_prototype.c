@@ -274,7 +274,7 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
     }
   }
 
-  /*for (j=0; j<256; j+=16) {
+  for (j=0; j<256; j+=16) {
     rj16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j]);
     
     rjlow16vec = _mm256_slli_epi32(rj16vec, 16);
@@ -291,6 +291,6 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
     __m256i rj16vec_new = _mm256_xor_epi32(tl, tu);
 
     _mm256_storeu_si256((__m256i*)&arr_simd[j], rj16vec_new);
-  }*/
+  }
   return arr_simd;
 }

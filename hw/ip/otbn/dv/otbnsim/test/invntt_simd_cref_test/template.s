@@ -1199,6 +1199,58 @@ loopj_len128:
     addi       x5, x5, 1
     bne        x5, x20, loopj_len128
 
+/*****************************************FINAL LOOP************************************************/
+
+    add        x6, x0, x0       /* x6 : offset to next block */
+
+    addi       x8, x0, 1441
+
+    BN.BROADCAST    w4, x8       /* broadcast f across w4 */
+
+    addi       x20, x0, 16
+    addi       x5, x0, 0         /* x5: loop_j ctr */
+
+loop_final:
+
+    /* Load r[j] */
+    la         x1, r
+    add        x1, x1, x6
+    addi       x3, x0, 5
+    BN.LID     x3, 0(x1)         /* r[j] elements are in w5 */
+
+    BN.LSHIFTVEC    w7, w5, 16
+    BN.RSHIFTVEC    w7, w7, 16   /* w7: rjlenlow16vec */
+    BN.RSHIFTVEC    w8, w5, 16   /* w8: rjlenupp16vec */
+
+    /* compute tl = fqmul_simd(zeta32vec, rjlenlow16vec); */
+    BN.MULVEC       w9, w4, w7   /* fqmul arg: a = a*b */
+    BN.MULVEC32     w19, w9, w2     /* t = a*QINV */
+    BN.MULVEC       w29, w19, w1    /* t = t*KYBER_Q */
+    BN.SUBVEC       w20, w9, w29
+    BN.RSHIFTVEC    w21, w20, 16
+
+    BN.AND          w21, w21, w3
+
+    /* compute tu = fqmul_simd(zeta32vec, rjlenupp16vec); */
+    BN.MULVEC       w10, w4, w8
+    BN.MULVEC32     w14, w10, w2
+    BN.MULVEC       w14, w14, w1
+    BN.SUBVEC       w10, w10, w14
+    BN.RSHIFTVEC    w10, w10, 16
+    BN.AND          w10, w10, w3
+    BN.LSHIFTVEC    w11, w10, 16
+    BN.XOR          w12, w11, w21
+
+    /* r[j] */
+    la         x1, r
+    add        x1, x1, x6
+    addi       x3, x0, 12
+    BN.SID     x3, 0(x1)
+
+    addi       x6, x6, 32
+    addi       x5, x5, 1
+    bne        x5, x20, loop_final
+
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
     addi       x11, x0, [idx]

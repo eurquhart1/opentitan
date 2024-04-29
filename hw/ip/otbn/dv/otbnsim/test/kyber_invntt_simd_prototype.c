@@ -215,10 +215,10 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
 
   len = 8;
   j=0;
-  //for(start = 0; start < 256; start += 2*len) {
+  for(start = 0; start < 256; start += 2*len) {
       zeta = zetas[k--];
       zeta32vec = _mm256_set1_epi32(zeta);
-      //for(j = start; j < start + len; j+=16) {
+      for(j = start; j < start + len; j+=16) {
         rj16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j]);
         rjlen16vec = _mm256_loadu_si256((__m256i*) & arr_simd[j + len]);
         barrett_arg = _mm256_add_epi16(rj16vec, rjlen16vec);
@@ -242,8 +242,8 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
         rj16vec_new = _mm256_inserti128_si256(_mm256_setzero_si256(), _mm256_castsi256_si128(rj16vec_new), 0);
         __m256i res = _mm256_xor_epi32(rj16vec_new, rjlen16vec_new);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], res);
-      //}
-  //}
+      }
+  }
   /*for(len = 16; len <= 128; len <<= 1) {
     for(start = 0; start < 256; start = j + len) {
       zeta = zetas[k--];

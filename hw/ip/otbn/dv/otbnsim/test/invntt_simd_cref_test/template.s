@@ -140,6 +140,270 @@ loopj_len8:
     addi       x3, x0, 12
     BN.SID     x3, 0(x1)
 
+    addi       x6, x6, 32
+    addi       x5, x5, 1
+
+    /* load zeta and broadcast */
+    srli       x8, x28, 16
+
+    BN.BROADCAST    w4, x8
+    
+    /* Load r[j] */
+    la         x1, r
+    add        x1, x1, x6
+    addi       x3, x0, 12
+    BN.LID     x3, 0(x1)         /* r[j] elements are in w12 */
+
+    /* Load r[j + len] (next block) */
+    la         x1, r
+    add        x1, x1, x6
+    addi       x1, x1, 32
+    addi       x3, x0, 5
+    BN.LID     x3, 0(x1)         /* r[j] (next block) elements are in w5 */
+    BN.RSHI    w5, w5, w12 >> 128
+
+    BN.ADDVEC       w6, w12, w5
+
+    BN.LSHIFTVEC    w7, w6, 16
+    BN.RSHIFTVEC    w7, w7, 16    /* w7: rjlenlow16vec */
+    BN.RSHIFTVEC    w8, w6, 16   /* w8: rjlenupp16vec */
+
+    /* barrett reduction */
+
+    /* barrett reduction for tl */
+    BN.MULVEC       w21, w7, w30     /* rjlow16vec*v_vec */
+    BN.ADDVEC       w21, w21, w31    /* (rjlow16vec*v_vec) + (1<<25) */
+    BN.ARSHIFTVEC    w21, w21, 26
+    BN.MULVEC       w21, w21, w1
+
+    BN.AND          w21, w21, w3
+
+    /* barrett reduction for tu */
+    BN.MULVEC       w10, w8, w30
+    BN.ADDVEC       w10, w10, w31    /* (rjlow16vec*v_vec) + (1<<25) */
+    BN.ARSHIFTVEC    w10, w10, 26
+    BN.MULVEC       w10, w10, w1
+
+    BN.AND          w10, w10, w3
+    BN.LSHIFTVEC    w11, w10, 16
+    BN.XOR          w22, w11, w21
+    BN.SUBVEC       w22, w6, w22
+
+    /* full barrett reduction done */
+
+    BN.SUBVEC       w5, w5, w12  /* w5: r[j+len] - t */
+
+    BN.LSHIFTVEC    w7, w5, 16
+    BN.RSHIFTVEC    w7, w7, 16   /* w7: rjlenlow16vec */
+    BN.RSHIFTVEC    w8, w5, 16   /* w8: rjlenupp16vec */
+
+    /* compute tl = fqmul_simd(zeta32vec, rjlenlow16vec); */
+    BN.MULVEC       w9, w4, w7   /* fqmul arg: a = a*b */
+    BN.MULVEC32     w19, w9, w2     /* t = a*QINV */
+    BN.MULVEC       w29, w19, w1    /* t = t*KYBER_Q */
+    BN.SUBVEC       w20, w9, w29
+    BN.RSHIFTVEC    w21, w20, 16
+
+    BN.AND          w21, w21, w3
+
+    /* compute tu = fqmul_simd(zeta32vec, rjlenupp16vec); */
+    BN.MULVEC       w10, w4, w8
+    BN.MULVEC32     w14, w10, w2
+    BN.MULVEC       w14, w14, w1
+    BN.SUBVEC       w10, w10, w14
+    BN.RSHIFTVEC    w10, w10, 16
+    BN.AND          w10, w10, w3
+    BN.LSHIFTVEC    w11, w10, 16
+    BN.XOR          w12, w11, w21
+
+    BN.LSHI         w12, w0, w12 >> 128
+    BN.AND          w22, w22, w24
+
+    BN.XOR          w12, w12, w22
+
+    la         x1, r
+    add        x1, x1, x6
+    addi       x3, x0, 12
+    BN.SID     x3, 0(x1)
+
+    addi       x6, x6, 32
+
+    bne        x5, x20, loopj_len8
+
+    /* load zeta and broadcast */
+    la         x1, zetas         /* Load base address of zetas from memory */
+    add        x2, x1, x4        /* x1 : base address of zetas plus offset to element */
+    lw         x28, 0(x2)         /* load word 32 bits */
+    and        x8, x28, x26
+
+    BN.BROADCAST    w4, x8
+
+    sub        x4, x4, x21         /* k-- */
+    
+    /* Load r[j] */
+    la         x1, r
+    add        x1, x1, x6
+    addi       x3, x0, 12
+    BN.LID     x3, 0(x1)         /* r[j] elements are in w12 */
+
+    /* Load r[j + len] (next block) */
+    la         x1, r
+    add        x1, x1, x6
+    addi       x1, x1, 32
+    addi       x3, x0, 5
+    BN.LID     x3, 0(x1)         /* r[j] (next block) elements are in w5 */
+    BN.RSHI    w5, w5, w12 >> 128
+
+    BN.ADDVEC       w6, w12, w5
+
+    BN.LSHIFTVEC    w7, w6, 16
+    BN.RSHIFTVEC    w7, w7, 16    /* w7: rjlenlow16vec */
+    BN.RSHIFTVEC    w8, w6, 16   /* w8: rjlenupp16vec */
+
+    /* barrett reduction */
+
+    /* barrett reduction for tl */
+    BN.MULVEC       w21, w7, w30     /* rjlow16vec*v_vec */
+    BN.ADDVEC       w21, w21, w31    /* (rjlow16vec*v_vec) + (1<<25) */
+    BN.ARSHIFTVEC    w21, w21, 26
+    BN.MULVEC       w21, w21, w1
+
+    BN.AND          w21, w21, w3
+
+    /* barrett reduction for tu */
+    BN.MULVEC       w10, w8, w30
+    BN.ADDVEC       w10, w10, w31    /* (rjlow16vec*v_vec) + (1<<25) */
+    BN.ARSHIFTVEC    w10, w10, 26
+    BN.MULVEC       w10, w10, w1
+
+    BN.AND          w10, w10, w3
+    BN.LSHIFTVEC    w11, w10, 16
+    BN.XOR          w22, w11, w21
+    BN.SUBVEC       w22, w6, w22
+
+    /* full barrett reduction done */
+
+    BN.SUBVEC       w5, w5, w12  /* w5: r[j+len] - t */
+
+    BN.LSHIFTVEC    w7, w5, 16
+    BN.RSHIFTVEC    w7, w7, 16   /* w7: rjlenlow16vec */
+    BN.RSHIFTVEC    w8, w5, 16   /* w8: rjlenupp16vec */
+
+    /* compute tl = fqmul_simd(zeta32vec, rjlenlow16vec); */
+    BN.MULVEC       w9, w4, w7   /* fqmul arg: a = a*b */
+    BN.MULVEC32     w19, w9, w2     /* t = a*QINV */
+    BN.MULVEC       w29, w19, w1    /* t = t*KYBER_Q */
+    BN.SUBVEC       w20, w9, w29
+    BN.RSHIFTVEC    w21, w20, 16
+
+    BN.AND          w21, w21, w3
+
+    /* compute tu = fqmul_simd(zeta32vec, rjlenupp16vec); */
+    BN.MULVEC       w10, w4, w8
+    BN.MULVEC32     w14, w10, w2
+    BN.MULVEC       w14, w14, w1
+    BN.SUBVEC       w10, w10, w14
+    BN.RSHIFTVEC    w10, w10, 16
+    BN.AND          w10, w10, w3
+    BN.LSHIFTVEC    w11, w10, 16
+    BN.XOR          w12, w11, w21
+
+    BN.LSHI         w12, w0, w12 >> 128
+    BN.AND          w22, w22, w24
+
+    BN.XOR          w12, w12, w22
+
+    la         x1, r
+    add        x1, x1, x6
+    addi       x3, x0, 12
+    BN.SID     x3, 0(x1)
+
+    addi       x6, x6, 32
+    addi       x5, x5, 1
+
+    /* load zeta and broadcast */
+    srli       x8, x28, 16
+
+    BN.BROADCAST    w4, x8
+    
+    /* Load r[j] */
+    la         x1, r
+    add        x1, x1, x6
+    addi       x3, x0, 12
+    BN.LID     x3, 0(x1)         /* r[j] elements are in w12 */
+
+    /* Load r[j + len] (next block) */
+    la         x1, r
+    add        x1, x1, x6
+    addi       x1, x1, 32
+    addi       x3, x0, 5
+    BN.LID     x3, 0(x1)         /* r[j] (next block) elements are in w5 */
+    BN.RSHI    w5, w5, w12 >> 128
+
+    BN.ADDVEC       w6, w12, w5
+
+    BN.LSHIFTVEC    w7, w6, 16
+    BN.RSHIFTVEC    w7, w7, 16    /* w7: rjlenlow16vec */
+    BN.RSHIFTVEC    w8, w6, 16   /* w8: rjlenupp16vec */
+
+    /* barrett reduction */
+
+    /* barrett reduction for tl */
+    BN.MULVEC       w21, w7, w30     /* rjlow16vec*v_vec */
+    BN.ADDVEC       w21, w21, w31    /* (rjlow16vec*v_vec) + (1<<25) */
+    BN.ARSHIFTVEC    w21, w21, 26
+    BN.MULVEC       w21, w21, w1
+
+    BN.AND          w21, w21, w3
+
+    /* barrett reduction for tu */
+    BN.MULVEC       w10, w8, w30
+    BN.ADDVEC       w10, w10, w31    /* (rjlow16vec*v_vec) + (1<<25) */
+    BN.ARSHIFTVEC    w10, w10, 26
+    BN.MULVEC       w10, w10, w1
+
+    BN.AND          w10, w10, w3
+    BN.LSHIFTVEC    w11, w10, 16
+    BN.XOR          w22, w11, w21
+    BN.SUBVEC       w22, w6, w22
+
+    /* full barrett reduction done */
+
+    BN.SUBVEC       w5, w5, w12  /* w5: r[j+len] - t */
+
+    BN.LSHIFTVEC    w7, w5, 16
+    BN.RSHIFTVEC    w7, w7, 16   /* w7: rjlenlow16vec */
+    BN.RSHIFTVEC    w8, w5, 16   /* w8: rjlenupp16vec */
+
+    /* compute tl = fqmul_simd(zeta32vec, rjlenlow16vec); */
+    BN.MULVEC       w9, w4, w7   /* fqmul arg: a = a*b */
+    BN.MULVEC32     w19, w9, w2     /* t = a*QINV */
+    BN.MULVEC       w29, w19, w1    /* t = t*KYBER_Q */
+    BN.SUBVEC       w20, w9, w29
+    BN.RSHIFTVEC    w21, w20, 16
+
+    BN.AND          w21, w21, w3
+
+    /* compute tu = fqmul_simd(zeta32vec, rjlenupp16vec); */
+    BN.MULVEC       w10, w4, w8
+    BN.MULVEC32     w14, w10, w2
+    BN.MULVEC       w14, w14, w1
+    BN.SUBVEC       w10, w10, w14
+    BN.RSHIFTVEC    w10, w10, 16
+    BN.AND          w10, w10, w3
+    BN.LSHIFTVEC    w11, w10, 16
+    BN.XOR          w12, w11, w21
+
+    BN.LSHI         w12, w0, w12 >> 128
+    BN.AND          w22, w22, w24
+
+    BN.XOR          w12, w12, w22
+
+    la         x1, r
+    add        x1, x1, x6
+    addi       x3, x0, 12
+    BN.SID     x3, 0(x1)
+
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
     addi       x11, x0, [idx]

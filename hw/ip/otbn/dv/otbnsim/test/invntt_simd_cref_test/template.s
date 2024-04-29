@@ -29,18 +29,25 @@
     lw         x26, 0(x1)
 
     addi       x4, x0, 252         /* x4 : k */
-    addi       x20, x0, 8        /* x20: inner looplim */
+    addi       x20, x0, 1        /* x20: inner looplim */
     addi       x6, x0, 0         /* x6 : offset to next block */
-    addi       x14, x0, 256      /* x14: len(*2) */
+    addi       x14, x0, 32      /* x14: len(*2) */
+    addi       x29, x0, 16
     addi       x5, x0, 0         /* x5: loop ctr */
 
-    addi       x17, x0, 16        /* x17: loop_len lim */
+    addi       x17, x0, 128        /* x17: loop_len lim */
     addi       x25, x0, 512         /* lim start */
     addi       x21, x0, 4
 
-/************************************************LEN=128****************************************************/
+/************************************************LEN={64,32,16}****************************************************/
 
-    add        x6, x0, 0       /* x6 : offset to next block */
+looplen_mul16:
+
+    addi       x19, x0, 0        /* x19 : start */
+
+loopstart_mul16:
+
+    add        x6, x0, x19       /* x6 : offset to next block */
 
     /* load zeta and broadcast */
     la         x1, zetas         /* Load base address of zetas from memory */
@@ -50,10 +57,10 @@
 
     BN.BROADCAST    w4, x8       /* broadcast zeta across w4 */
 
-    addi       x4, x0, 248         /* k++ */
+    sub        x4, x4, x21         /* k-- */
     addi       x5, x0, 0         /* x5: loop_j ctr */
 
-loopj_len128:
+loopj_mul16:
 
     /* Load r[j] */
     la         x1, r
@@ -137,13 +144,105 @@ loopj_len128:
 
     addi       x6, x6, 32
     addi       x5, x5, 1
-    bne        x5, x20, loopj_len128
+    bne        x5, x20, loopj_mul16
 
     add        x19, x19, x14
     add        x19, x19, x14
+    add        x6, x0, x19       /* x6 : offset to next block */
 
-    srli       x20, x20, 1
-    srli       x14, x14, 1            /* len >>= 1 */
+    /* load zeta and broadcast */
+    srli       x8, x28, 16
+
+    BN.BROADCAST    w4, x8       /* broadcast zeta across w4 */
+
+    addi       x5, x0, 0         /* x5: loop_j ctr */
+
+loopj_mul16b:
+
+    /* Load r[j] */
+    la         x1, r
+    add        x1, x1, x6
+    addi       x3, x0, 12
+    BN.LID     x3, 0(x1)         /* r[j] elements are in w12 */
+
+    /* Load r[j + len] */
+    la         x1, r
+    add        x1, x1, x6
+    add        x1, x1, x14
+    addi       x3, x0, 5
+    BN.LID     x3, 0(x1)         /* r[j + len] elements are in w5 */
+
+    BN.ADDVEC       w6, w12, w5   /* w6: rjvec + rjlenvec (barrett arg) */
+
+    BN.LSHIFTVEC    w7, w6, 16
+    BN.RSHIFTVEC    w7, w7, 16   /* w7: rjlow16vec */
+    BN.RSHIFTVEC    w8, w6, 16   /* w8: rjupp16vec */
+
+    /* barrett reduction */
+
+    /* barrett reduction for tl */
+    BN.MULVEC       w21, w7, w30     /* rjlow16vec*v_vec */
+    BN.ADDVEC       w21, w21, w31    /* (rjlow16vec*v_vec) + (1<<25) */
+    BN.ARSHIFTVEC    w21, w21, 26
+    BN.MULVEC       w21, w21, w1
+
+    BN.AND          w21, w21, w3
+
+    /* barrett reduction for tu */
+    BN.MULVEC       w10, w8, w30
+    BN.ADDVEC       w10, w10, w31    /* (rjlow16vec*v_vec) + (1<<25) */
+    BN.ARSHIFTVEC    w10, w10, 26
+    BN.MULVEC       w10, w10, w1
+
+    BN.AND          w10, w10, w3
+    BN.LSHIFTVEC    w11, w10, 16
+    BN.XOR          w22, w11, w21
+    BN.SUBVEC       w22, w6, w22
+
+    /* full barrett reduction done */
+
+    BN.SUBVEC       w5, w5, w12  /* w5: r[j+len] - t */
+
+    BN.LSHIFTVEC    w7, w5, 16
+    BN.RSHIFTVEC    w7, w7, 16   /* w7: rjlenlow16vec */
+    BN.RSHIFTVEC    w8, w5, 16   /* w8: rjlenupp16vec */
+
+    /* compute tl = fqmul_simd(zeta32vec, rjlenlow16vec); */
+    BN.MULVEC       w9, w4, w7   /* fqmul arg: a = a*b */
+    BN.MULVEC32     w19, w9, w2     /* t = a*QINV */
+    BN.MULVEC       w29, w19, w1    /* t = t*KYBER_Q */
+    BN.SUBVEC       w20, w9, w29
+    BN.RSHIFTVEC    w21, w20, 16
+
+    BN.AND          w21, w21, w3
+
+    /* compute tu = fqmul_simd(zeta32vec, rjlenupp16vec); */
+    BN.MULVEC       w10, w4, w8
+    BN.MULVEC32     w14, w10, w2
+    BN.MULVEC       w14, w14, w1
+    BN.SUBVEC       w10, w10, w14
+    BN.RSHIFTVEC    w10, w10, 16
+    BN.AND          w10, w10, w3
+    BN.LSHIFTVEC    w11, w10, 16
+    BN.XOR          w12, w11, w21
+
+    /* r[j] */
+    la         x1, r
+    add        x1, x1, x6
+    addi       x3, x0, 22
+    BN.SID     x3, 0(x1)
+
+    /* r[j + len] */
+    la         x1, r
+    add        x1, x1, x6
+    add        x1, x1, x14
+    addi       x3, x0, 12
+    BN.SID     x3, 0(x1)
+
+    addi       x6, x6, 32
+    addi       x5, x5, 1
+    bne        x5, x20, loopj_mul16b
+
 
 
     /* Load r[j] into x19 */

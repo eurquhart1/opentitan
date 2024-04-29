@@ -244,7 +244,7 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
         _mm256_storeu_si256((__m256i*)&arr_simd[j], res);
       }
   }
-  /*for(len = 16; len <= 128; len <<= 1) {
+  for(len = 16; len <= 128; len <<= 1) {
     for(start = 0; start < 256; start = j + len) {
       zeta = zetas[k--];
       zeta32vec = _mm256_set1_epi32(zeta);

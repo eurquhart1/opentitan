@@ -246,7 +246,7 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
   len = 16;
   start = 0;
   //for(len = 16; len <= 128; len <<= 1) {
-    for(start = 0; start < 48; start = j + len) {
+    for(start = 0; start < 256; start = j + len) {
       zeta = zetas[k--];
       zeta32vec = _mm256_set1_epi32(zeta);
       for(j = start; j < start + len; j+=16) {

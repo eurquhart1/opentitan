@@ -243,7 +243,9 @@ loopj_mul16b:
     addi       x5, x5, 1
     bne        x5, x20, loopj_mul16b
 
-
+    add        x19, x19, x14
+    add        x19, x19, x14
+    bne        x19, x25, loopstart_mul16
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */

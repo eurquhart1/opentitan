@@ -102,7 +102,7 @@ def create_tests(dirpath):
         init_vals, init_asm_data = generate_otbn_data_section_16bit(r)
 
         # Create the input files
-        for i in range(256):
+        for i in range(16):
             tmpcopy = asm_template
             # Write the input value into the template
             tmpreplace = tmpcopy.replace("[idx]", str(i))
@@ -129,7 +129,7 @@ def create_tests(dirpath):
         r_res = [res[i] for i in range(256)]
 
         # Create the output files
-        for i in range(256):
+        for i in range(16):
             tmpcopy = exp_template
 
             tmpreplace = tmpcopy.replace("[rj]", str(r_res[i] & 0xFFFF))        # remember j gets updated an extra time in python

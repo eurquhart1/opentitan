@@ -176,7 +176,7 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
         res = _mm256_xor_epi32(res, res_offset);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], res);
       }
-  }
+  }*/
   len = 4;
   for(start = 0; start < 256; start += 2*len) {
       zeta = zetas[k--];
@@ -211,7 +211,7 @@ int16_t* invntt_simd(int16_t arr_simd[256]) {
         res = _mm256_xor_epi32(res, res_offset);
         _mm256_storeu_si256((__m256i*)&arr_simd[j], res);
       }
-  }*/
+  }
 
   len = 8;
   j=0;

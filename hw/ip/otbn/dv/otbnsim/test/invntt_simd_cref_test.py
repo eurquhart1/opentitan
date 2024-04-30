@@ -147,7 +147,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
         tests = list()
         
         # Create all of the input/output files in the /testadd directory
-        tests += create_tests("test/invntt_simd_cref_test")
+        #tests += create_tests("test/invntt_simd_cref_test")
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)

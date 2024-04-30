@@ -34,6 +34,16 @@
     addi       x3, x0, 13
     BN.LID     x3, 0(x1)          /*  w13 should now contain 64-bit mask */
 
+    /* Load v into w30 */
+    la         x1, v
+    addi       x3, x0, 30
+    BN.LID     x3, 0(x1)
+
+    /* Load 1<<25 into w16 */
+    la         x1, barrett_add_vec
+    addi       x3, x0, 16
+    BN.LID     x3, 0(x1)
+
     /* Set looping variables to constants while iteratively building */
     addi       x7, x0, 127          /* x7 : k */
     addi       x8, x0, 2          /* x8 : len */
@@ -146,7 +156,32 @@ body:
     BN.MULQACC.WO.Z  w11, w13.0, w11.0, 0 
     BN.XOR      w2, w11, w2
 
-    BN.ADD           w22, w14, w2
+    BN.ADD           w15, w14, w2           /* w15 (barrett_arg): t + r[j+len] */
+
+    /* barrett reduction */
+    BN.MULQACC.WO.Z  w22, w15.0, w30.0, 0
+    BN.ADD           w22, w22, w16
+
+    /* Store result to memory */
+    la         x1, tmp
+    addi       x3, x0, 22                   /* reference to w7, which holds the result */
+    BN.SID     x3, 0(x1)
+    /* Load t into x30 */
+    la         x1, tmp
+    lw         x30, 0(x1)         /* load word 32 bits */
+    srli       x30, x30, 26
+    la         x1, tmp
+    sw         x30, 0(x1)
+    la         x1, tmp
+    addi       x3, x0, 22
+    BN.LID     x3, 0(x1)          /*  w22: t = ((int32_t)v*a + (1<<25)) >> 26 */
+
+    BN.MULQACC.WO.Z  w22, w22.0, w6.0, 0  /* w22: t *= KYBER_Q */
+
+    BN.SUB           w22, w15, w22
+
+    /* barrett reduction complete */
+
     BN.SUB           w2, w2, w14            /* r[j+len] = r[j+len] - t */
     BN.MULQACC.WO.Z  w10, w1.0, w2.0, 0     /* fqmul(zeta, r[j+len]) => w1 = a */
 
@@ -397,6 +432,20 @@ end:
     .dword 0x00000000ffffffff
 
     .balign 32
+    v:
+    .dword 0x0000000000004ebf
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    barrett_add_vec:
+    .dword 0x0000000002000000
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
     zeta:
     .word  0x0
     .word  0x0
@@ -430,6 +479,13 @@ end:
 
     .balign 32
     t:
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    tmp:
     .dword 0x0
     .dword 0x0
     .dword 0x0

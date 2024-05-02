@@ -34,6 +34,20 @@
     addi       x3, x0, 13
     BN.LID     x3, 0(x1)          /*  w13 should now contain 64-bit mask */
 
+    /* Load 256-bit mask from memory */
+    la         x1, mask_256b
+    addi       x3, x0, 25
+    BN.LID     x3, 0(x1)          /*  w25 should now contain 256-bit mask */
+
+    /* Load 64-bit mask from memory */
+    la         x1, mask_64
+    addi       x3, x0, 19
+    BN.LID     x3, 0(x1)          /*  w19 should now contain 64-bit mask */
+
+    la         x1, mask_upper26
+    addi       x3, x0, 20
+    BN.LID     x3, 0(x1)
+
     /* Load v into w30 */
     la         x1, v
     addi       x3, x0, 30
@@ -51,7 +65,7 @@
     addi       x15, x0, 1         /* lim len */
 
 looplen:
-    addi       x9, x0, 0          /* x9 : start */
+    addi       x9, x0, 1          /* x9 : start */
 
     /* loopi          1, 2 */
 loopstart:
@@ -75,10 +89,10 @@ body:
     sll        x20, x20, x23
     srl        x20, x20, x23
 
-    addi       x7, x7, 1            /* k++ */
+    /*addi       x7, x7, 1        */
+    BN.ADDI     w17, w0, 0
+    /*loop       x8, 137*/
 
-    /*loop       x8, 102*/
-    
     /* Load r[j + len] into x16 */
     la         x1, r              /* Load base address of r from memory */
     add        x12, x11, x8       /* x12 : j + len */
@@ -123,6 +137,10 @@ body:
     sw         x19, 0(x1)
     la         x1, r_j_len
     sw         x16, 0(x1)
+    sub        x31, x16, x19
+    and        x31, x31, x27
+    la         x1, r_j_len_sub_r_j
+    sw         x31, 0(x1)
 
     /* Read zeta, r[j] and r[j+len] into WDRs for processing */
     la         x1, zeta
@@ -139,6 +157,10 @@ body:
     addi       x3, x0, 2
     BN.LID     x3, 0(x1)          /*  w2 should now contain r_j_len */
 
+    la         x1, r_j_len_sub_r_j
+    addi       x3, x0, 26
+    BN.LID     x3, 0(x1)          /* w26 = r[j + len] - r[j] */
+
     /* sign extend these numbers */
 
     BN.RSHI     w11, w0, w1 >> 15
@@ -153,18 +175,25 @@ body:
 
     BN.RSHI     w11, w0, w2 >> 15
     BN.AND      w11, w11, w12       /* w11 is 0 if positive, 1 if negative */
-    BN.MULQACC.WO.Z  w11, w13.0, w11.0, 0 
+    BN.MULQACC.WO.Z  w11, w25.0, w11.0, 0 
     BN.XOR      w2, w11, w2
+
+    BN.RSHI     w11, w0, w26 >> 15
+    BN.AND      w11, w11, w12       /* w11 is 0 if positive, 1 if negative */
+    BN.MULQACC.WO.Z  w11, w13.0, w11.0, 0
+    BN.XOR      w26, w11, w26
 
     BN.ADD           w15, w14, w2           /* w15 (barrett_arg): t + r[j+len] */
 
     /* barrett reduction */
     BN.MULQACC.WO.Z  w22, w15.0, w30.0, 0
+              /* truncate to 32b */
     BN.ADD           w22, w22, w16
+    BN.AND           w22, w22, w21
 
     /* Store result to memory */
     la         x1, tmp
-    addi       x3, x0, 22                   /* reference to w7, which holds the result */
+    addi       x3, x0, 22                   /* reference to w22, which holds the result */
     BN.SID     x3, 0(x1)
     /* Load t into x30 */
     la         x1, tmp
@@ -173,18 +202,21 @@ body:
     la         x1, tmp
     sw         x30, 0(x1)
     la         x1, tmp
-    addi       x3, x0, 22
-    BN.LID     x3, 0(x1)          /*  w22: t = ((int32_t)v*a + (1<<25)) >> 26 */
+    addi       x3, x0, 24
+    BN.LID     x3, 0(x1)          /*  w24: t = ((int32_t)v*a + (1<<25)) >> 26 */
 
-    BN.MULQACC.WO.Z  w22, w22.0, w6.0, 0  /* w22: t *= KYBER_Q */
+    BN.RSHI     w11, w0, w24 >> 5
+    BN.AND      w11, w11, w12       /* w11 is 0 if positive, 1 if negative */
+    BN.MULQACC.WO.Z  w11, w20.0, w11.0, 0 
+    BN.XOR      w23, w11, w24       /*seems to be correct to here*/
 
-    BN.SUB           w22, w15, w22
+    BN.MULQACC.WO.Z  w22, w23.0, w6.0, 0  /* w22: t *= KYBER_Q */
+    BN.AND           w23, w22, w19          
+
+    BN.SUB           w22, w15, w23          /* ok to here */
 
     /* barrett reduction complete */
-
-    BN.SUB           w2, w2, w14            /* r[j+len] = r[j+len] - t */
-    BN.MULQACC.WO.Z  w10, w1.0, w2.0, 0     /* fqmul(zeta, r[j+len]) => w1 = a */
-
+    BN.MULQACC.WO.Z  w10, w1.0, w26.0, 0     /* fqmul(zeta, r[j+len]) => w1 = a */
     /*BN.AND      w10, w10, w21*/
 
     BN.AND     w9, w5, w10         /*  (int16_t)a */
@@ -251,13 +283,8 @@ body:
 
     /* load r[j] into r4 for testing purposes */
     lw         x5, 0(x2)
-    addi       x11, x11, 1
-
-    add        x9, x11, x8          /* start = j + len */
-    /* bne        x9, x25, loopstart */
-
-    srli       x8, x8, 1            /* len >>= 1 */
-    /* bne        x8, x15, looplen */
+    /*addi       x11, x11, 1*/
+    
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
@@ -411,11 +438,32 @@ end:
     .dword 0x0
 
     .balign 32
+    mask_64:
+    .dword  0xffffffffffffffff  /* 32 set bits */
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    mask_upper26:
+    .dword  0xffffffffffffffc0  /* 32 set bits */
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
     mask_128b:
     .dword  0xffffffffffffffff  /* 32 set bits */
     .dword  0xffffffffffffffff
     .dword 0x0
     .dword 0x0
+
+    .balign 32
+    mask_256b:
+    .dword  0xffffffffffffffff
+    .dword  0xffffffffffffffff
+    .dword  0xffffffffffffffff
+    .dword  0xffffffffffffffff
 
     .balign 32
     len4mask:
@@ -463,6 +511,14 @@ end:
 
     .balign 32
     r_j:
+    .word  0x0
+    .word  0x0
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    r_j_len_sub_r_j:
     .word  0x0
     .word  0x0
     .dword 0x0

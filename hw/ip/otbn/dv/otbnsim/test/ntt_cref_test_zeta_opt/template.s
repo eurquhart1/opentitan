@@ -92,7 +92,7 @@
     /* Read zeta and r[j+len] into WDRs for processing */
     la         x1, zeta
     addi       x3, x0, 1
-    BN.LID     x3, 0(x1)          /*  w1 should now contain zeta */
+    BN.LID     x3, 0(x1)          /*  41w1 should now contain zeta */
 
     /* Load inputs from memory */
     la         x1, r_j_len
@@ -133,7 +133,7 @@
     BN.SID     x3, 0(x1)
 
     /* Load t into x21 */
-    la         x1, t
+    la         x1, t    /*70*/
     lw         x21, 0(x1)         /* load word 32 bits */
 
     /* Subtract: r[j] - t into x22 */
@@ -177,7 +177,7 @@
     lw         x5, 0(x2)
     addi       x11, x11, 1
 
-    srli       x8, x8, 1            /* len >>= 1 */
+    srli       x8, x8, 1            /* end loop len >>= 1 */
 
 looplen:
     addi       x9, x0, 0          /* x9 : start */

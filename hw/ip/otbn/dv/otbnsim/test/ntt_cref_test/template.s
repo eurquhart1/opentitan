@@ -39,16 +39,12 @@
     addi       x8, x0, 128          /* x8 : len */
     addi       x25, x0, 256         /* lim start */
     addi       x15, x0, 1         /* lim len */
+    addi       x9, x0, 0          /* x9 : start */
 
 looplen:
     addi       x9, x0, 0          /* x9 : start */
 
-    /* loopi          1, 2 */
 loopstart:
-    jal        x0, body
-    /* nop */
-
-body:
     add        x11, x0, x9         /* x11 : j = start */
 
     /* Load zeta into x20 */
@@ -67,7 +63,9 @@ body:
 
     addi       x7, x7, 1            /* k++ */
 
-    loop       x8, 102
+    add        x31, x9, x8          /* x31: start + len */
+    /*loop       x8, 102*/
+loopj_init:
     
     /* Load r[j + len] into x16 */
     la         x1, r              /* Load base address of r from memory */
@@ -201,6 +199,7 @@ body:
     /* load r[j] into r4 for testing purposes */
     lw         x5, 0(x2)
     addi       x11, x11, 1
+    bne        x11, x31, loopj_init
 
     add        x9, x11, x8          /* start = j + len */
     bne        x9, x25, loopstart

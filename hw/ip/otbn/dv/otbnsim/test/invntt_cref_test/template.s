@@ -65,7 +65,7 @@
     addi       x15, x0, 1         /* lim len */
 
 looplen:
-    addi       x9, x0, 0          /* x9 : start */
+    addi       x9, x0, 1          /* x9 : start */
 
     /* loopi          1, 2 */
 loopstart:
@@ -193,7 +193,7 @@ body:
     BN.RSHI     w11, w0, w22 >> 5
     BN.AND      w11, w11, w12       /* w11 is 0 if positive, 1 if negative */
     BN.MULQACC.WO.Z  w11, w20.0, w11.0, 0 
-    BN.XOR      w23, w11, w24       /*seems to be correct to here*/
+    BN.XOR      w23, w11, w22       /*seems to be correct to here*/
 
     BN.MULQACC.WO.Z  w22, w23.0, w6.0, 0  /* w22: t *= KYBER_Q */
     BN.AND           w23, w22, w19          
@@ -202,7 +202,7 @@ body:
 
     /* barrett reduction complete */
     BN.MULQACC.WO.Z  w10, w1.0, w26.0, 0     /* fqmul(zeta, r[j+len]) => w1 = a */
-    BN.AND      w10, w10, w21
+    /*BN.AND      w10, w10, w21*/
 
     BN.AND     w9, w5, w10         /*  (int16_t)a */
 

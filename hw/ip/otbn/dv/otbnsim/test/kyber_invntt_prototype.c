@@ -55,6 +55,7 @@ int16_t barrett_reduce(int16_t a) {
   int16_t t;
   const int16_t v = ((1<<26) + KYBER_Q/2)/KYBER_Q;
   t  = ((int32_t)v*a + (1<<25)) >> 26;
+  printf("w22:\t%d\n", (int32_t)v*a + (1<<25) >> 26);
   t *= KYBER_Q;
   return a - t;
 }
@@ -66,18 +67,17 @@ int16_t* invntt(int16_t r[256]) {
 
   k = 127;
   len = 2;
-  j = 1;
-  start = 1;
+  j = 0;
+  start = 0;
   //for(len = 2; len <= 64; len <<= 1) {
     //for(start = 0; start < 256; start = j + len) {
       zeta = zetas[k--];
       //for(j = start; j < start + len; j++) {
         t = r[j];
+        printf("t:\t%d\n", t);
+        printf("r[j+len]:\t%d\n", r[j+len]);
         r[j] = barrett_reduce(t + r[j + len]);
         r[j + len] = r[j + len] - t;
-        printf("zeta: %d", zeta);
-        printf("r[j + len]: %d", r[j + len]);
-        printf("zeta*r[j + len]: %d", zeta * r[j + len]);
         r[j + len] = fqmul(zeta, r[j + len]);
       //}
     //}

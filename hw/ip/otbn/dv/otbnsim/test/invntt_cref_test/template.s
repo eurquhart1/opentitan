@@ -65,7 +65,7 @@
     addi       x15, x0, 1         /* lim len */
 
 looplen:
-    addi       x9, x0, 1          /* x9 : start */
+    addi       x9, x0, 0          /* x9 : start */
 
     /* loopi          1, 2 */
 loopstart:
@@ -175,7 +175,7 @@ body:
 
     BN.RSHI     w11, w0, w2 >> 15
     BN.AND      w11, w11, w12       /* w11 is 0 if positive, 1 if negative */
-    BN.MULQACC.WO.Z  w11, w25.0, w11.0, 0 
+    BN.MULQACC.WO.Z  w11, w13.0, w11.0, 0 
     BN.XOR      w2, w11, w2
 
     BN.RSHI     w11, w0, w26 >> 15
@@ -183,29 +183,14 @@ body:
     BN.MULQACC.WO.Z  w11, w13.0, w11.0, 0
     BN.XOR      w26, w11, w26
 
-    BN.ADD           w15, w14, w2           /* w15 (barrett_arg): t + r[j+len] */
+    BN.ADD           w15, w14, w2           /* ok. w15 (barrett_arg): t + r[j+len] */
 
     /* barrett reduction */
     BN.MULQACC.WO.Z  w22, w15.0, w30.0, 0
-              /* truncate to 32b */
     BN.ADD           w22, w22, w16
     BN.AND           w22, w22, w21
-
-    /* Store result to memory */
-    la         x1, tmp
-    addi       x3, x0, 22                   /* reference to w22, which holds the result */
-    BN.SID     x3, 0(x1)
-    /* Load t into x30 */
-    la         x1, tmp
-    lw         x30, 0(x1)         /* load word 32 bits */
-    srli       x30, x30, 26
-    la         x1, tmp
-    sw         x30, 0(x1)
-    la         x1, tmp
-    addi       x3, x0, 24
-    BN.LID     x3, 0(x1)          /*  w24: t = ((int32_t)v*a + (1<<25)) >> 26 */
-
-    BN.RSHI     w11, w0, w24 >> 5
+    BN.RSHI          w22, w0, w22 >> 26
+    BN.RSHI     w11, w0, w22 >> 5
     BN.AND      w11, w11, w12       /* w11 is 0 if positive, 1 if negative */
     BN.MULQACC.WO.Z  w11, w20.0, w11.0, 0 
     BN.XOR      w23, w11, w24       /*seems to be correct to here*/
@@ -213,11 +198,11 @@ body:
     BN.MULQACC.WO.Z  w22, w23.0, w6.0, 0  /* w22: t *= KYBER_Q */
     BN.AND           w23, w22, w19          
 
-    BN.SUB           w22, w15, w23          /* ok to here */
+    BN.SUB           w22, w15, w23
 
     /* barrett reduction complete */
     BN.MULQACC.WO.Z  w10, w1.0, w26.0, 0     /* fqmul(zeta, r[j+len]) => w1 = a */
-    /*BN.AND      w10, w10, w21*/
+    BN.AND      w10, w10, w21
 
     BN.AND     w9, w5, w10         /*  (int16_t)a */
 
@@ -229,10 +214,10 @@ body:
     BN.MULQACC.WO.Z  w11, w13.0, w11.0, 0 
     BN.XOR      w3, w11, w3
 
-    BN.MULQACC.WO.Z  w8, w3.0, w6.0, 0     /* (int32_t)t * KYBER_Q */
+    BN.MULQACC.WO.Z  w8, w3.0, w6.0, 0     /* ok. (int32_t)t * KYBER_Q */
 
-    BN.SUB           w7, w10, w8            /* a - (int32_t)t*KYBER_Q */
-    BN.RSHI          w7, w0, w7 >> 16 
+    BN.SUB           w7, w10, w8            /* ok. a - (int32_t)t*KYBER_Q */
+    BN.RSHI          w7, w0, w7 >> 16
     BN.AND           w7, w7, w5             /* w7 = (int16t)((a - t*Q)>>16) */
 
     /* Store result t to memory */

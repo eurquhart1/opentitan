@@ -92,6 +92,8 @@ body:
     /*addi       x7, x7, 1        */
     BN.ADDI     w17, w0, 0
     /*loop       x8, 137*/
+    add        x31, x9, x8          /* x31: start + len */
+loopj_init:
 
     /* Load r[j + len] into x16 */
     la         x1, r              /* Load base address of r from memory */
@@ -137,10 +139,10 @@ body:
     sw         x19, 0(x1)
     la         x1, r_j_len
     sw         x16, 0(x1)
-    sub        x31, x16, x19
-    and        x31, x31, x27
+    sub        x13, x16, x19
+    and        x13, x13, x27
     la         x1, r_j_len_sub_r_j
-    sw         x31, 0(x1)
+    sw         x13, 0(x1)
 
     /* Read zeta, r[j] and r[j+len] into WDRs for processing */
     la         x1, zeta
@@ -268,8 +270,8 @@ body:
 
     /* load r[j] into r4 for testing purposes */
     lw         x5, 0(x2)
-    /*addi       x11, x11, 1*/
-    
+    addi       x11, x11, 1
+    bne        x11, x31, loopj_init
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */

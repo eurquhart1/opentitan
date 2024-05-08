@@ -181,19 +181,24 @@ loopj_init:
     BN.XOR      w26, w11, w26
 
     BN.ADD           w15, w14, w2           /* ok. w15 (barrett_arg): t + r[j+len] */
+    BN.RSHI     w11, w0, w15 >> 15
+    BN.AND      w11, w11, w12       /* w11 is 0 if positive, 1 if negative */
+    BN.MULQACC.WO.Z  w11, w13.0, w11.0, 0
+    BN.XOR      w15, w11, w15
+
 
     /* barrett reduction */
     BN.MULQACC.WO.Z  w22, w15.0, w30.0, 0
     BN.ADD           w22, w22, w16
     BN.AND           w22, w22, w21
     BN.RSHI          w22, w0, w22 >> 26
-    BN.RSHI     w11, w0, w22 >> 5
-    BN.AND      w11, w11, w12       /* w11 is 0 if positive, 1 if negative */
+    BN.RSHI          w11, w0, w22 >> 5
+    BN.AND           w11, w11, w12       /* w11 is 0 if positive, 1 if negative */
     BN.MULQACC.WO.Z  w11, w20.0, w11.0, 0 
-    BN.XOR      w23, w11, w22       /*seems to be correct to here*/
+    BN.XOR           w23, w11, w22       /*seems to be correct to here*/
 
     BN.MULQACC.WO.Z  w22, w23.0, w6.0, 0  /* w22: t *= KYBER_Q */
-    BN.AND           w23, w22, w19          
+    BN.AND           w23, w22, w5
 
     BN.SUB           w22, w15, w23
     /* barrett reduction complete */

@@ -55,7 +55,11 @@ int16_t barrett_reduce(int16_t a) {
   int16_t t;
   const int16_t v = ((1<<26) + KYBER_Q/2)/KYBER_Q;
   t  = ((int32_t)v*a + (1<<25)) >> 26;
+  printf("t_init:\t%d\n", t);
+  printf("KYBER_Q:\t%d\n", KYBER_Q);
+  printf("t*KYBER_Q:\t%d\n", t*KYBER_Q);
   t *= KYBER_Q;
+  printf("a - t:\t%d\n", a - t);
   return a - t;
 }
 

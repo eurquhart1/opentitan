@@ -65,7 +65,7 @@
     addi       x15, x0, 1         /* lim len */
 
 looplen:
-    addi       x9, x0, 46          /* x9 : start */
+    addi       x9, x0, 0          /* x9 : start */
 
 loopstart:
     add        x11, x0, x9         /* x11 : j = start */
@@ -271,7 +271,7 @@ loopj_init:
     /* load r[j] into r4 for testing purposes */
     lw         x5, 0(x2)
     addi       x11, x11, 1
-    /*bne        x11, x31, loopj_init*/
+    bne        x11, x31, loopj_init
 
     add        x9, x11, x8          /* start = j + len */
     /*bne        x9, x25, loopstart*/

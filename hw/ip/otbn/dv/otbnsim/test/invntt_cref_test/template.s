@@ -59,20 +59,15 @@
     BN.LID     x3, 0(x1)
 
     /* Set looping variables to constants while iteratively building */
-    addi       x7, x0, 127          /* x7 : k */
-    addi       x8, x0, 2          /* x8 : len */
-    addi       x25, x0, 256         /* lim start */
+    addi       x7, x0, 1          /* x7 : k */
+    addi       x8, x0, 128          /* x8 : len */
+    addi       x25, x0, 128         /* lim start */
     addi       x15, x0, 1         /* lim len */
 
 looplen:
-    addi       x9, x0, 1          /* x9 : start */
+    addi       x9, x0, 0          /* x9 : start */
 
-    /* loopi          1, 2 */
 loopstart:
-    jal        x0, body
-    /* nop */
-
-body:
     add        x11, x0, x9         /* x11 : j = start */
 
     /* Load zeta into x20 */
@@ -89,7 +84,7 @@ body:
     sll        x20, x20, x23
     srl        x20, x20, x23
 
-    /*addi       x7, x7, 1        */
+    addi       x7, x7, 1
     BN.ADDI     w17, w0, 0
     /*loop       x8, 137*/
     add        x31, x9, x8          /* x31: start + len */
@@ -201,7 +196,6 @@ loopj_init:
     BN.AND           w23, w22, w19          
 
     BN.SUB           w22, w15, w23
-
     /* barrett reduction complete */
     BN.MULQACC.WO.Z  w10, w1.0, w26.0, 0     /* fqmul(zeta, r[j+len]) => w1 = a */
     /*BN.AND      w10, w10, w21*/
@@ -272,6 +266,9 @@ loopj_init:
     lw         x5, 0(x2)
     addi       x11, x11, 1
     bne        x11, x31, loopj_init
+
+    add        x9, x11, x8          /* start = j + len */
+    /*bne        x9, x25, loopstart*/
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
@@ -529,6 +526,13 @@ end:
 
     .balign 32
     tmp:
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+    .dword 0x0
+
+    .balign 32
+    a:
     .dword 0x0
     .dword 0x0
     .dword 0x0

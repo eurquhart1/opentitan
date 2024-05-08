@@ -64,13 +64,12 @@ int16_t* invntt(int16_t r[256]) {
   int16_t t, zeta;
   const int16_t f = 1441; // mont^2/128
 
-  k = 127;
-  len = 2;
-  j = 1;
-  start = 1;
+  k = 1;
+  len = 128;
+  start = 0;
   //for(len = 2; len <= 64; len <<= 1) {
-    //for(start = 0; start < 256; start = j + len) {
-      zeta = zetas[k--];
+    //for(start = 0; start < 128; start = j + len) {
+      zeta = zetas[k++];
       for(j = start; j < start + len; j++) {
         t = r[j];
         r[j] = barrett_reduce(t + r[j + len]);

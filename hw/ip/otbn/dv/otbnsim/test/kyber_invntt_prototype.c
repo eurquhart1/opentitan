@@ -77,8 +77,9 @@ int16_t* invntt(int16_t r[256]) {
     }
   }
 
-  //for(j = 0; j < 256; j++)
-    //r[j] = fqmul(r[j], f);
+  for(j = 0; j < 256; j++)
+    //printf("r[j]:\t%d\n", r[j]);
+    r[j] = fqmul(r[j], f);
 
   return r;
 }

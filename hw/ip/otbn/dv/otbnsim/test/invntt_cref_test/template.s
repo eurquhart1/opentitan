@@ -65,7 +65,7 @@
     addi       x15, x0, 1         /* lim len */
 
 looplen:
-    addi       x9, x0, 0          /* x9 : start */
+    addi       x9, x0, 46          /* x9 : start */
 
 loopstart:
     add        x11, x0, x9         /* x11 : j = start */
@@ -181,6 +181,7 @@ loopj_init:
     BN.XOR      w26, w11, w26
 
     BN.ADD           w15, w14, w2           /* ok. w15 (barrett_arg): t + r[j+len] */
+    BN.AND           w15, w15, w5
     BN.RSHI     w11, w0, w15 >> 15
     BN.AND      w11, w11, w12       /* w11 is 0 if positive, 1 if negative */
     BN.MULQACC.WO.Z  w11, w13.0, w11.0, 0
@@ -270,7 +271,7 @@ loopj_init:
     /* load r[j] into r4 for testing purposes */
     lw         x5, 0(x2)
     addi       x11, x11, 1
-    bne        x11, x31, loopj_init
+    /*bne        x11, x31, loopj_init*/
 
     add        x9, x11, x8          /* start = j + len */
     /*bne        x9, x25, loopstart*/

@@ -59,9 +59,9 @@
     BN.LID     x3, 0(x1)
 
     /* Set looping variables to constants while iteratively building */
-    addi       x7, x0, 1          /* x7 : k */
+    addi       x7, x0, 127          /* x7 : k */
     addi       x8, x0, 128          /* x8 : len */
-    addi       x25, x0, 128         /* lim start */
+    addi       x25, x0, 256         /* lim start */
     addi       x15, x0, 1         /* lim len */
 
 looplen:
@@ -84,7 +84,7 @@ loopstart:
     sll        x20, x20, x23
     srl        x20, x20, x23
 
-    addi       x7, x7, 1
+    addi       x7, x7, -1
     BN.ADDI     w17, w0, 0
     /*loop       x8, 137*/
     add        x31, x9, x8          /* x31: start + len */
@@ -274,7 +274,7 @@ loopj_init:
     bne        x11, x31, loopj_init
 
     add        x9, x11, x8          /* start = j + len */
-    /*bne        x9, x25, loopstart*/
+    bne        x9, x25, loopstart
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */

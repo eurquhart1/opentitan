@@ -60,9 +60,9 @@
 
     /* Set looping variables to constants while iteratively building */
     addi       x7, x0, 127          /* x7 : k */
-    addi       x8, x0, 128          /* x8 : len */
+    addi       x8, x0, 2          /* x8 : len */
     addi       x25, x0, 256         /* lim start */
-    addi       x15, x0, 1         /* lim len */
+    addi       x15, x0, 256         /* lim len */
 
 looplen:
     addi       x9, x0, 0          /* x9 : start */
@@ -275,6 +275,9 @@ loopj_init:
 
     add        x9, x11, x8          /* start = j + len */
     bne        x9, x25, loopstart
+
+    slli       x8, x8, 1            /* len >>= 1 */
+    bne        x8, x15, looplen
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */

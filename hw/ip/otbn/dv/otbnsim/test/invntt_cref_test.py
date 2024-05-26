@@ -115,16 +115,16 @@ def create_tests(dirpath):
         # Calculate the new values of t
         # Run the C code using ctypes
         # Load the shared library
-        lib = CDLL('/home/eu233/opentitan/hw/ip/otbn/dv/otbnsim/test/kyber_invntt_simd_prototype.so')
+        lib = CDLL('/home/eu233/opentitan/hw/ip/otbn/dv/otbnsim/test/kyber_invntt_prototype.so')
 
         # Define the return type of the function
-        lib.invntt_simd.restype = POINTER(c_short)
-        lib.invntt_simd.argtypes = [POINTER(c_short)]
+        lib.invntt.restype = POINTER(c_short)
+        lib.invntt.argtypes = [POINTER(c_short)]
         
         r_arr = (c_short * len(r))(*r)
     
 
-        res = lib.invntt_simd(r_arr)
+        res = lib.invntt(r_arr)
 
         r_res = [res[i] for i in range(256)]
 
@@ -139,7 +139,7 @@ def create_tests(dirpath):
             with open(new_exp_filepath, 'w') as newfile:
                 newfile.write(tmpreplace)
 
-    return find_tests("invntt_simd_cref_test/inputoutput")
+    return find_tests("invntt_cref_test/inputoutput")
 
 
 def pytest_generate_tests(metafunc: Any) -> None:
@@ -147,7 +147,7 @@ def pytest_generate_tests(metafunc: Any) -> None:
         tests = list()
         
         # Create all of the input/output files in the /testadd directory
-        #tests += create_tests("test/invntt_simd_cref_test")
+        #tests += create_tests("test/invntt_cref_test")
             
         test_ids = [os.path.basename(e[0]) for e in tests]
         metafunc.parametrize("asm_file,expected_file", tests, ids=test_ids)

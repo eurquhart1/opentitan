@@ -86,7 +86,7 @@ loopstart:
 
     addi       x7, x7, -1
     BN.ADDI     w17, w0, 0
-    /*loop       x8, 137*/
+
     add        x31, x9, x8          /* x31: start + len */
 loopj_init:
 
@@ -268,8 +268,6 @@ loopj_init:
     add        x2, x1, x13
     sw         x18, 0(x2)
 
-    /* load r[j] into r4 for testing purposes */
-    lw         x5, 0(x2)
     addi       x11, x11, 1
     bne        x11, x31, loopj_init
 
@@ -286,7 +284,7 @@ loopj_init:
     addi       x3, x0, 2
     BN.LID     x3, 0(x1)          /*  w2 should now contain f */
 
-final_loop:
+loop_all_els_end:
 
     /* Load r[j] into x19 */
     la         x1, r              /* Load base address of r from memory */
@@ -326,7 +324,6 @@ final_loop:
 
     BN.MULQACC.WO.Z  w10, w1.0, w2.0, 0     /* w1 = a */
 
-    /*BN.AND      w10, w10, w21*/
 
     BN.AND     w9, w5, w10         /*  (int16_t)a */
 
@@ -368,7 +365,7 @@ final_loop:
     sw         x18, 0(x2)
 
     addi       x11, x11, 1
-    bne        x11, x25, final_loop
+    bne        x11, x25, loop_all_els_end
 
 
     /* Load r[j] into x19 */

@@ -39,7 +39,6 @@
     addi       x8, x0, 128          /* x8 : len */
     addi       x25, x0, 256         /* lim start */
     addi       x15, x0, 1         /* lim len */
-    addi       x9, x0, 0          /* x9 : start */
 
 looplen:
     addi       x9, x0, 0          /* x9 : start */
@@ -64,7 +63,7 @@ loopstart:
     addi       x7, x7, 1            /* k++ */
 
     add        x31, x9, x8          /* x31: start + len */
-    /*loop       x8, 102*/
+    
 loopj_init:
     
     /* Load r[j + len] into x16 */
@@ -132,8 +131,6 @@ loopj_init:
 
     BN.MULQACC.WO.Z  w10, w1.0, w2.0, 0     /* w1 = a */
 
-    /*BN.AND      w10, w10, w21*/
-
     BN.AND     w9, w5, w10         /*  (int16_t)a */
 
     BN.MULQACC.WO.Z  w3, w9.0, w4.0, 0     /* t = (int16_t)a * QINV */
@@ -176,9 +173,6 @@ loopj_init:
     add        x2, x1, x13
     sw         x3, 0(x2)
 
-    /* load r[j + len] into r4 for testing purposes */
-    lw         x4, 0(x2)
-
     /* Add: r[j] + t into x22 */
     add        x22, x19, x21
 
@@ -196,8 +190,6 @@ loopj_init:
     add        x2, x1, x13
     sw         x18, 0(x2)
 
-    /* load r[j] into r4 for testing purposes */
-    lw         x5, 0(x2)
     addi       x11, x11, 1
     bne        x11, x31, loopj_init
 
